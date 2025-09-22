@@ -9,6 +9,13 @@ const nextConfig = {
   },
   // Evitar pré-renderização de rotas de API
   output: 'standalone',
+  // Configurações para Prisma
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push('@prisma/client')
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig
