@@ -35,6 +35,7 @@ interface Appointment {
   clientPhone?: string
   clientCompany?: string
   createdAt: Date
+  updatedAt: Date
 }
 
 interface AppointmentConfirmationProps {
@@ -299,7 +300,7 @@ export function AppointmentConfirmation({
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h5 className="font-semibold">{appointment.title}</h5>
-                        <Badge className={statusColors[appointment.status]} size="sm">
+                        <Badge className={statusColors[appointment.status]} >
                           {statusLabels[appointment.status]}
                         </Badge>
                       </div>
@@ -313,7 +314,6 @@ export function AppointmentConfirmation({
                       {showDetails && (
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => showDetails(appointment)}
                           className="gap-1"
                         >
@@ -323,7 +323,6 @@ export function AppointmentConfirmation({
                       )}
                       <Button
                         variant="outline"
-                        size="sm"
                         onClick={() => handleCancel(appointment)}
                         disabled={loading === appointment.id}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -359,7 +358,7 @@ export function AppointmentConfirmation({
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h5 className="font-semibold">{appointment.title}</h5>
-                        <Badge className={statusColors[appointment.status]} size="sm">
+                        <Badge className={statusColors[appointment.status]} >
                           {statusLabels[appointment.status]}
                         </Badge>
                       </div>
@@ -373,7 +372,6 @@ export function AppointmentConfirmation({
                       {showDetails && (
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => showDetails(appointment)}
                           className="gap-1"
                         >
@@ -384,7 +382,6 @@ export function AppointmentConfirmation({
                       {onReactivate && (
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => handleReactivate(appointment)}
                           disabled={loading === appointment.id}
                           className="text-green-600 hover:text-green-700 hover:bg-green-50 gap-1"
@@ -422,7 +419,7 @@ export function AppointmentConfirmation({
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h5 className="font-semibold">{appointment.title}</h5>
-                        <Badge className={statusColors[appointment.status]} size="sm">
+                        <Badge className={statusColors[appointment.status]} >
                           {statusLabels[appointment.status]}
                         </Badge>
                       </div>
@@ -436,7 +433,6 @@ export function AppointmentConfirmation({
                       {showDetails && (
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => showDetails(appointment)}
                           className="gap-1"
                         >

@@ -22,7 +22,7 @@ interface AppointmentStatus {
 
 export default function PublicAgendaPage() {
   const [settings, setSettings] = useState<any>(null)
-  const [existingAppointments, setExistingAppointments] = useState<Array<{ startTime: Date; endTime: Date }>>([])
+  const [existingAppointments, setExistingAppointments] = useState<Array<{ startTime: Date; endTime: Date; status: 'PENDING' | 'CONFIRMED' }>>([])
   const [appointmentsStatus, setAppointmentsStatus] = useState<AppointmentStatus[]>([])
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [loading, setLoading] = useState(true)

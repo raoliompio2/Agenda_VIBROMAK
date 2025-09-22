@@ -1,22 +1,32 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
 import { ModernScheduler } from '@/components/scheduling/ModernScheduler'
+import { CalendarPicker } from '@/components/calendar/CalendarPicker'
+import { AvailableTimeSlots } from '@/components/public/AvailableTimeSlots'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Clock, Building2 } from 'lucide-react'
+import { Calendar, Clock, Building2, Plus } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 interface Appointment {
   id: string
   title: string
+  description?: string
   startTime: Date
   endTime: Date
   type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'OTHER'
   location?: string
-  status: 'CONFIRMED'
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
+  clientName: string
+  clientEmail: string
+  clientPhone?: string
+  clientCompany?: string
+  createdAt: Date
+  updatedAt: Date
 }
 
 export default function PublicAgendaPage() {

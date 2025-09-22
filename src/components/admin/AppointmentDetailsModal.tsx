@@ -32,7 +32,7 @@ interface Appointment {
   clientPhone?: string
   clientCompany?: string
   createdAt: Date
-  updatedAt?: Date
+  updatedAt: Date
 }
 
 interface AppointmentDetailsModalProps {

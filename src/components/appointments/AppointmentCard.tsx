@@ -20,6 +20,8 @@ interface AppointmentCardProps {
     clientEmail: string
     clientPhone?: string
     clientCompany?: string
+    createdAt: Date
+    updatedAt: Date
   }
   showActions?: boolean
   onConfirm?: (id: string) => void

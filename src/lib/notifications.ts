@@ -57,13 +57,13 @@ export async function sendNewAppointmentNotification(appointmentId: string) {
     const emailHtml = generateAppointmentRequestEmail({
       clientName: appointment.clientName,
       clientEmail: appointment.clientEmail,
-      clientPhone: appointment.clientPhone,
-      clientCompany: appointment.clientCompany,
+      clientPhone: appointment.clientPhone || undefined,
+      clientCompany: appointment.clientCompany || undefined,
       title: appointment.title,
       startTime: appointment.startTime,
       endTime: appointment.endTime,
       duration: appointment.duration,
-      description: appointment.description
+      description: appointment.description || undefined
     })
 
     const result = await sendEmail({
@@ -111,8 +111,8 @@ export async function sendConfirmationNotification(appointmentId: string) {
       title: appointment.title,
       startTime: appointment.startTime,
       endTime: appointment.endTime,
-      description: appointment.description,
-      location: appointment.location
+      description: appointment.description || undefined,
+      location: appointment.location || undefined
     })
 
     const result = await sendEmail({

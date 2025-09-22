@@ -41,7 +41,7 @@ export default function PublicAgendaPage() {
   const [settings, setSettings] = useState<any>(null)
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([])
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
-  const [existingAppointments, setExistingAppointments] = useState<Array<{ startTime: Date; endTime: Date }>>([])
+  const [existingAppointments, setExistingAppointments] = useState<Array<{ startTime: Date; endTime: Date; status: 'PENDING' | 'CONFIRMED' }>>([])
   const [appointmentsStatus, setAppointmentsStatus] = useState<AppointmentStatus[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -149,7 +149,8 @@ export default function PublicAgendaPage() {
         .filter((apt: any) => apt.status === 'PENDING' || apt.status === 'CONFIRMED')
         .map((apt: any) => ({
           startTime: new Date(apt.startTime),
-          endTime: new Date(apt.endTime)
+          endTime: new Date(apt.endTime),
+          status: apt.status
         }))
       
       setAppointmentsStatus(Array.from(statusMap.values()))
