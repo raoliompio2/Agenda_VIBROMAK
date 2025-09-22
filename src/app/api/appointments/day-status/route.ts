@@ -2,8 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateTimeSlots } from '@/lib/utils'
 
+// Configuração para evitar pré-renderização
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(request: NextRequest) {
   try {
+    // Verificar se estamos em ambiente de build
+    if (process.env.NODE_ENV === 'production' && !request.url.includes('?')) {
+      return NextResponse.json({
+        date: new Date().toISOString().split('T')[0],
+        isWorkingDay: false,
+        occupationRate: 0,
+        status: 'unavailable',
+        totalSlots: 0,
+        occupiedSlots: 0,
+        availableSlots: 0
+      })
+    }
+
     const { searchParams } = new URL(request.url)
     const dateStr = searchParams.get('date')
     

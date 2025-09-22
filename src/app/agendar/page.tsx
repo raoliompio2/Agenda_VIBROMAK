@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+
+// Configuração para evitar pré-renderização
+export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SimpleAppointmentForm } from '@/components/forms/SimpleAppointmentForm'
@@ -25,7 +28,7 @@ interface AppointmentStatus {
   }>
 }
 
-export default function AgendarPage() {
+function AgendarContent() {
   const [settings, setSettings] = useState<any>(null)
   const [existingAppointments, setExistingAppointments] = useState<any[]>([])
   const [appointmentsStatus, setAppointmentsStatus] = useState<AppointmentStatus[]>([])
@@ -281,5 +284,20 @@ export default function AgendarPage() {
       {/* Toast de notificação */}
       {Toast}
     </div>
+  )
+}
+
+export default function AgendarPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <AgendarContent />
+    </Suspense>
   )
 }
