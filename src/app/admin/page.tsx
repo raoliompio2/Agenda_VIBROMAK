@@ -11,6 +11,7 @@ import { AppointmentConfirmation } from '@/components/admin/AppointmentConfirmat
 import { AppointmentDetailsModal } from '@/components/admin/AppointmentDetailsModal'
 import { CalendarPicker } from '@/components/calendar/CalendarPicker'
 import { EmailTestPanel } from '@/components/admin/EmailTestPanel'
+import { useToast } from '@/components/ui/alert-toast'
 import { 
   Calendar, 
   Clock, 
@@ -41,6 +42,7 @@ interface Appointment {
 export default function AdminDashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { showToast, Toast } = useToast()
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [stats, setStats] = useState({
@@ -166,19 +168,40 @@ export default function AdminDashboard() {
       })
       
       if (response.ok) {
+        showToast({
+          type: 'success',
+          title: 'Agendamento Reativado!',
+          message: 'O agendamento foi reativado com sucesso.',
+          duration: 5000
+        })
         fetchAppointments()
         fetchStats()
       } else {
         const errorData = await response.json()
         if (errorData.conflictingAppointment) {
-          alert(`❌ Não é possível reativar este agendamento.\n\nJá existe um agendamento confirmado no mesmo horário:\n\n📅 ${errorData.conflictingAppointment.title}\n⏰ ${new Date(errorData.conflictingAppointment.startTime).toLocaleString('pt-BR')} - ${new Date(errorData.conflictingAppointment.endTime).toLocaleString('pt-BR')}\n✅ Status: ${errorData.conflictingAppointment.status}`)
+          showToast({
+            type: 'error',
+            title: 'Conflito de Horário',
+            message: `Não é possível reativar este agendamento. Já existe um agendamento confirmado no mesmo horário: ${errorData.conflictingAppointment.title} (${new Date(errorData.conflictingAppointment.startTime).toLocaleString('pt-BR')} - ${new Date(errorData.conflictingAppointment.endTime).toLocaleString('pt-BR')})`,
+            duration: 8000
+          })
         } else {
-          alert(`❌ Erro ao reativar agendamento: ${errorData.error}`)
+          showToast({
+            type: 'error',
+            title: 'Erro ao Reativar',
+            message: `Não foi possível reativar o agendamento: ${errorData.error}`,
+            duration: 6000
+          })
         }
       }
     } catch (error) {
       console.error('Erro ao reativar agendamento:', error)
-      alert('❌ Erro de conexão. Tente novamente.')
+      showToast({
+        type: 'error',
+        title: 'Erro de Conexão',
+        message: 'Não foi possível conectar ao servidor. Tente novamente.',
+        duration: 6000
+      })
     }
   }
 
@@ -435,6 +458,9 @@ export default function AdminDashboard() {
         isOpen={isDetailsModalOpen}
         onClose={closeDetailsModal}
       />
+
+      {/* Toast de notificação */}
+      {Toast}
     </div>
   )
 }
