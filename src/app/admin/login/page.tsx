@@ -46,16 +46,18 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-primary text-primary-foreground border-primary">
+      <Card className="w-full max-w-md bg-white border-gray-200 shadow-lg">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Building2 className="h-12 w-12 text-orange-500" />
+            <Building2 className="h-12 w-12 text-blue-600" />
           </div>
+          <CardTitle className="text-2xl font-bold text-gray-900">Login Administrativo</CardTitle>
+          <p className="text-gray-600">Acesse o painel de administração</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -64,7 +66,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
-                  className="pl-10"
+                  className="pl-10 bg-white text-gray-900 border-gray-300"
                   required
                   disabled={isLoading}
                 />
@@ -72,7 +74,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-gray-700 font-medium">Senha</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -81,7 +83,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="pl-10"
+                  className="pl-10 bg-white text-gray-900 border-gray-300"
                   required
                   disabled={isLoading}
                 />
@@ -89,14 +91,14 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="text-sm text-red-200 bg-red-900/20 p-3 rounded-md border border-red-800">
+              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
                 {error}
               </div>
             )}
 
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
               disabled={isLoading}
               size="lg"
             >

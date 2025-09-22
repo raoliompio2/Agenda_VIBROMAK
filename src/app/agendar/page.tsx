@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button'
 import { SimpleAppointmentForm } from '@/components/forms/SimpleAppointmentForm'
 import { ModernScheduler } from '@/components/scheduling/ModernScheduler'
 import { useToast } from '@/components/ui/alert-toast'
-import { ArrowLeft, Building2, Info } from 'lucide-react'
-import Link from 'next/link'
+import { Info, ArrowLeft } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 interface AppointmentStatus {
@@ -205,32 +204,6 @@ function AgendarContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {settings?.companyName || 'Empresa'}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {showScheduler ? 'Selecionar Horário' : 'Solicitar Agendamento'} - {settings?.directorName || 'Diretor'}
-                </p>
-              </div>
-            </div>
-            
-            <Link href="/">
-              <Button variant="outline" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Voltar à Agenda
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           
