@@ -168,9 +168,17 @@ export default function AdminDashboard() {
       if (response.ok) {
         fetchAppointments()
         fetchStats()
+      } else {
+        const errorData = await response.json()
+        if (errorData.conflictingAppointment) {
+          alert(`❌ Não é possível reativar este agendamento.\n\nJá existe um agendamento confirmado no mesmo horário:\n\n📅 ${errorData.conflictingAppointment.title}\n⏰ ${new Date(errorData.conflictingAppointment.startTime).toLocaleString('pt-BR')} - ${new Date(errorData.conflictingAppointment.endTime).toLocaleString('pt-BR')}\n✅ Status: ${errorData.conflictingAppointment.status}`)
+        } else {
+          alert(`❌ Erro ao reativar agendamento: ${errorData.error}`)
+        }
       }
     } catch (error) {
       console.error('Erro ao reativar agendamento:', error)
+      alert('❌ Erro de conexão. Tente novamente.')
     }
   }
 

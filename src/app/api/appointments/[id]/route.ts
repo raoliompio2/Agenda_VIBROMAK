@@ -69,10 +69,19 @@ export async function PATCH(
       )
     }
 
-    // Se está alterando horário, verificar conflitos
-    if (validatedData.startTime && validatedData.endTime) {
-      const startTime = new Date(validatedData.startTime)
-      const endTime = new Date(validatedData.endTime)
+    // Verificar conflitos se:
+    // 1. Está alterando horário OU
+    // 2. Está reativando um agendamento (mudando status para PENDING/CONFIRMED)
+    const shouldCheckConflicts = (validatedData.startTime && validatedData.endTime) || 
+                                (validatedData.status && ['PENDING', 'CONFIRMED'].includes(validatedData.status))
+
+    if (shouldCheckConflicts) {
+      const startTime = validatedData.startTime ? 
+        new Date(validatedData.startTime) : 
+        existingAppointment.startTime
+      const endTime = validatedData.endTime ? 
+        new Date(validatedData.endTime) : 
+        existingAppointment.endTime
 
       const conflictingAppointment = await prisma.appointment.findFirst({
         where: {
@@ -109,7 +118,16 @@ export async function PATCH(
 
       if (conflictingAppointment) {
         return NextResponse.json(
-          { error: 'Horário não disponível' },
+          { 
+            error: 'Horário não disponível. Já existe um agendamento confirmado neste horário.',
+            conflictingAppointment: {
+              id: conflictingAppointment.id,
+              title: conflictingAppointment.title,
+              startTime: conflictingAppointment.startTime,
+              endTime: conflictingAppointment.endTime,
+              status: conflictingAppointment.status
+            }
+          },
           { status: 400 }
         )
       }
