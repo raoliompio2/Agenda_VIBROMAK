@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(SECRETARY)
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relacionamento com agendamentos criados
+  createdAppointments Appointment[] @relation("CreatedBy")
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  duration    Int               @default(60) // em minutos
+  status      AppointmentStatus @default(PENDING)
+  type        AppointmentType   @default(MEETING)
+  location    String?
+  
+  // Informações do solicitante
+  clientName    String
+  clientEmail   String
+  clientPhone   String?
+  clientCompany String?
+  
+  // Participantes
+  participants AppointmentParticipant[]
+  
+  // Controle administrativo
+  createdById String?
+  createdBy   User? @relation("CreatedBy", fields: [createdById], references: [id])
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Notificações
+  notifications Notification[]
+  
+  @@index([startTime])
+  @@index([status])
+}
+
+model AppointmentParticipant {
+  id            String      @id @default(cuid())
+  appointmentId String
+  name          String
+  email         String
+  isOptional    Boolean     @default(false)
+  
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([appointmentId])
+  @@index([email])
+}
+
+model Notification {
+  id            String           @id @default(cuid())
+  appointmentId String
+  type          NotificationType
+  status        NotificationStatus @default(PENDING)
+  scheduledFor  DateTime
+  sentAt        DateTime?
+  
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([scheduledFor, status])
+}
+
+model SystemSettings {
+  id    String @id @default("settings")
+  
+  // Configurações de agendamento
+  workingHoursStart String @default("09:00")
+  workingHoursEnd   String @default("18:00")
+  workingDays       String @default("1,2,3,4,5") // 1=segunda, 7=domingo
+  meetingDuration   Int    @default(60) // em minutos
+  bufferTime        Int    @default(15) // tempo entre reuniões
+  
+  // Configurações de notificação
+  reminderHours     Int    @default(24) // lembrete x horas antes
+  autoApproval      Boolean @default(false)
+  
+  // Configurações da empresa
+  companyName       String @default("Empresa")
+  directorName      String @default("Diretor")
+  directorEmail     String @default("")
+  secretaryEmail    String @default("")
+  
+  updatedAt DateTime @updatedAt
+}
+
+enum UserRole {
+  SECRETARY
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum AppointmentType {
+  MEETING
+  CALL
+  PRESENTATION
+  OTHER
+}
+
+enum NotificationType {
+  CONFIRMATION
+  REMINDER
+  CANCELLATION
+  RESCHEDULED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
