@@ -294,6 +294,8 @@ export default function AdminDashboard() {
             <CalendarPicker
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
+              minDate={new Date(new Date().setDate(new Date().getDate() - 30))}
+              workingDays={[1, 2, 3, 4, 5, 6, 0]}
             />
             
             {/* Painel de Testes de Email */}
