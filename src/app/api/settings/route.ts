@@ -101,7 +101,6 @@ export async function GET() {
       secretaryEmail: 'recepcao@vibromak.com.br',
       companyPhone: '(14) 3415-4493',
       contactEmail: 'recepcao@vibromak.com.br',
-      createdAt: new Date(),
       updatedAt: new Date()
     }
     
@@ -116,6 +115,7 @@ export async function PUT(request: NextRequest) {
     
     const session = await getServerSession(authOptions)
     if (!session) {
+      console.log('Unauthorized access attempt')
       return NextResponse.json(
         { error: 'Acesso negado' },
         { status: 401 }
@@ -123,13 +123,17 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('Request body received:', JSON.stringify(body, null, 2))
+    
     const validatedData = settingsSchema.parse(body)
+    console.log('Data validated successfully:', JSON.stringify(validatedData, null, 2))
 
     // Separar campos que podem não existir no schema atual
     const { companyPhone, contactEmail, ...basicData } = validatedData
 
     try {
       // Tentar atualizar com todos os campos
+      console.log('Attempting database upsert with all fields...')
       const settings = await prisma.systemSettings.upsert({
         where: { id: 'settings' },
         update: validatedData,
@@ -138,6 +142,7 @@ export async function PUT(request: NextRequest) {
           ...validatedData
         }
       })
+      console.log('Database upsert successful:', settings)
 
       return NextResponse.json({
         message: 'Configurações atualizadas com sucesso',
@@ -151,6 +156,7 @@ export async function PUT(request: NextRequest) {
       })
     } catch (updateError) {
       // Se falhar, tentar apenas com campos básicos
+      console.error('Database upsert failed:', updateError)
       console.warn('Tentando atualizar apenas campos básicos...', updateError)
       
       const settings = await prisma.systemSettings.upsert({
@@ -183,8 +189,11 @@ export async function PUT(request: NextRequest) {
 
   } catch (error) {
     console.error('Erro ao atualizar configurações:', error)
+    console.error('Error details:', error instanceof Error ? error.message : error)
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack available')
     
     if (error instanceof z.ZodError) {
+      console.error('Validation errors:', error.errors)
       return NextResponse.json(
         { error: 'Dados inválidos', details: error.errors },
         { status: 400 }
@@ -192,7 +201,10 @@ export async function PUT(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { 
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      },
       { status: 500 }
     )
   }
