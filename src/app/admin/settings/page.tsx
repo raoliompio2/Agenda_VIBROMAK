@@ -76,7 +76,9 @@ export default function SettingsPage() {
     setMessage('')
     
     try {
-      const response = await fetch('/api/settings', {
+      // TESTE: Usar rota simplificada primeiro
+      console.log('Testando rota simplificada...')
+      const response = await fetch('/api/settings-simple', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -85,11 +87,13 @@ export default function SettingsPage() {
       })
 
       if (response.ok) {
-        setMessage('Configurações salvas com sucesso!')
-        setTimeout(() => setMessage(''), 3000)
+        const result = await response.json()
+        setMessage(`TESTE: ${result.message} (${result.timestamp})`)
+        setTimeout(() => setMessage(''), 5000)
       } else {
         const error = await response.json()
-        setMessage(`Erro: ${error.error}`)
+        setMessage(`ERRO ${response.status}: ${error.error} - ${error.errorMessage || ''}`)
+        console.error('Erro completo:', error)
       }
     } catch (error) {
       setMessage('Erro ao salvar configurações')
