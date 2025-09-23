@@ -18,10 +18,10 @@ const settingsSchema = z.object({
   autoApproval: z.boolean(),
   companyName: z.string().min(1),
   directorName: z.string().min(1),
-  directorEmail: z.string().email().optional().or(z.literal('')),
-  secretaryEmail: z.string().email().optional().or(z.literal('')),
+  directorEmail: z.union([z.string().email(), z.literal('')]).optional(),
+  secretaryEmail: z.union([z.string().email(), z.literal('')]).optional(),
   companyPhone: z.string().optional(),
-  contactEmail: z.string().email().optional().or(z.literal(''))
+  contactEmail: z.union([z.string().email(), z.literal('')]).optional()
 })
 
 export async function GET() {
@@ -113,7 +113,18 @@ export async function PUT(request: NextRequest) {
     // Verificar método permitido
     console.log('PUT method called on /api/settings')
     
-    const session = await getServerSession(authOptions)
+    let session;
+    try {
+      session = await getServerSession(authOptions)
+      console.log('Session check result:', session ? 'Session found' : 'No session')
+    } catch (authError) {
+      console.error('Error getting session:', authError)
+      return NextResponse.json(
+        { error: 'Erro de autenticação', details: authError instanceof Error ? authError.message : 'Unknown auth error' },
+        { status: 500 }
+      )
+    }
+    
     if (!session) {
       console.log('Unauthorized access attempt')
       return NextResponse.json(
@@ -124,6 +135,15 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
     console.log('Request body received:', JSON.stringify(body, null, 2))
+    
+    // TESTE: Retornar sucesso sem validação nem banco para verificar se o problema é aqui
+    if (body.debug === true) {
+      console.log('Debug mode - skipping validation and database')
+      return NextResponse.json({
+        message: 'Debug mode - requisição recebida com sucesso',
+        receivedData: body
+      })
+    }
     
     const validatedData = settingsSchema.parse(body)
     console.log('Data validated successfully:', JSON.stringify(validatedData, null, 2))
