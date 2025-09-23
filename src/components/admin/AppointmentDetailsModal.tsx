@@ -59,6 +59,8 @@ const typeLabels = {
   MEETING: '🤝 Reunião Presencial',
   CALL: '📞 Ligação/Videoconferência', 
   PRESENTATION: '📊 Apresentação',
+  PARTICULAR: '🔒 Compromisso Particular',
+  VIAGEM: '✈️ Viagem',
   OTHER: '📝 Outros Assuntos',
 }
 

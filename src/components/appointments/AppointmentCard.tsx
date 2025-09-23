@@ -48,6 +48,8 @@ const typeLabels = {
   MEETING: 'Reunião',
   CALL: 'Ligação',
   PRESENTATION: 'Apresentação',
+  PARTICULAR: 'Particular',
+  VIAGEM: 'Viagem',
   OTHER: 'Outro',
 }
 
