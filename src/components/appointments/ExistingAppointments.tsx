@@ -12,7 +12,7 @@ interface ExistingAppointment {
   startTime: Date
   endTime: Date
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED'
-  type?: 'MEETING' | 'CALL' | 'PRESENTATION' | 'OTHER'
+  type?: 'MEETING' | 'CALL' | 'PRESENTATION' | 'PARTICULAR' | 'VIAGEM' | 'OTHER'
   clientName: string
   clientEmail?: string
   clientCompany?: string
@@ -41,6 +41,8 @@ const typeIcons = {
   MEETING: '🤝',
   CALL: '📞',
   PRESENTATION: '📊',
+  PARTICULAR: '🔒',
+  VIAGEM: '✈️',
   OTHER: '📝'
 }
 

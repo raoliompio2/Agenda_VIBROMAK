@@ -17,7 +17,7 @@ export async function setupInitialData() {
         data: {
           email: 'recepcao@vibromak.com.br',
           name: 'Recepção',
-          role: 'SECRETARY',
+          role: 'ADMIN',
           password: hashedPassword
         }
       })
@@ -40,10 +40,12 @@ export async function setupInitialData() {
           bufferTime: 15,
           reminderHours: 24,
           autoApproval: false,
-          companyName: 'OpenDreams',
+          companyName: 'Vibromak',
           directorName: 'Rogério',
           directorEmail: 'rogerio@vibromak.com.br',
-          secretaryEmail: 'recepcao@vibromak.com.br'
+          secretaryEmail: 'recepcao@vibromak.com.br',
+          companyPhone: '(14) 3415-4493',
+          contactEmail: 'recepcao@vibromak.com.br'
         }
       })
       console.log('✅ Configurações do sistema criadas')

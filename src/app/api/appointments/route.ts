@@ -15,7 +15,7 @@ const appointmentSchema = z.object({
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
   duration: z.number().min(15).max(480).optional().default(60),
-  type: z.enum(['MEETING', 'CALL', 'PRESENTATION', 'OTHER']),
+  type: z.enum(['MEETING', 'CALL', 'PRESENTATION', 'PARTICULAR', 'VIAGEM', 'OTHER']),
   location: z.string().optional(),
   clientName: z.string().min(1, 'Nome é obrigatório'),
   clientEmail: z.string().email('Email inválido'),
@@ -159,6 +159,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date')
     const status = searchParams.get('status')
+    const type = searchParams.get('type')
     const publicView = searchParams.get('public') === 'true'
 
     let whereClause: any = {}
@@ -186,9 +187,14 @@ export async function GET(request: NextRequest) {
       whereClause.status = status
     }
 
-    // Para visualização pública, mostrar apenas agendamentos confirmados
+    if (type) {
+      whereClause.type = type
+    }
+
+    // Para visualização pública, mostrar apenas agendamentos confirmados E não particulares
     if (publicView) {
       whereClause.status = 'CONFIRMED'
+      whereClause.type = { notIn: ['PARTICULAR', 'VIAGEM'] }
     }
 
     const appointments = await prisma.appointment.findMany({

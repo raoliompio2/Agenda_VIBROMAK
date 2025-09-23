@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +16,7 @@ import { User, Mail, Phone, Building, Calendar, Clock, FileText, Users, CheckCir
 interface SimpleAppointmentFormData {
   title: string
   description: string
-  type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'OTHER'
+  type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'PARTICULAR' | 'VIAGEM' | 'OTHER'
   clientName: string
   clientEmail: string
   clientPhone: string
@@ -44,6 +45,7 @@ export function SimpleAppointmentForm({
   disabled = false,
   submitText = 'Enviar Solicitação'
 }: SimpleAppointmentFormProps) {
+  const { data: session } = useSession()
   const [isClient, setIsClient] = useState(false)
   const [formData, setFormData] = useState<SimpleAppointmentFormData>({
     title: '',
@@ -303,6 +305,12 @@ export function SimpleAppointmentForm({
                     <SelectItem value="MEETING">🤝 Reunião Presencial</SelectItem>
                     <SelectItem value="CALL">📞 Ligação/Videochamada</SelectItem>
                     <SelectItem value="PRESENTATION">📊 Apresentação</SelectItem>
+                    {(session?.user?.role === 'ADMIN' || session?.user?.role === 'SECRETARY') && (
+                      <>
+                        <SelectItem value="PARTICULAR">🔒 Compromisso Particular</SelectItem>
+                        <SelectItem value="VIAGEM">✈️ Viagem</SelectItem>
+                      </>
+                    )}
                     <SelectItem value="OTHER">📝 Outro</SelectItem>
                   </SelectContent>
                 </Select>

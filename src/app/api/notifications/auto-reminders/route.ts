@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
 
+// Função para buscar configurações de contato
+async function getContactSettings() {
+  const settings = await prisma.systemSettings.findFirst()
+  return {
+    companyPhone: settings?.companyPhone || '(14) 3415-4493',
+    contactEmail: settings?.contactEmail || 'recepcao@vibromak.com.br',
+    companyName: settings?.companyName || 'Vibromak'
+  }
+}
+
 export async function POST() {
   try {
     console.log('🔔 Iniciando processamento de lembretes automáticos...')
@@ -47,7 +57,7 @@ export async function POST() {
     for (const appointment of appointmentsNeedingReminder) {
       try {
         // Gerar email de lembrete
-        const reminderHtml = generateReminderEmail({
+        const reminderHtml = await generateReminderEmail({
           clientName: appointment.clientName,
           title: appointment.title,
           startTime: appointment.startTime,
@@ -110,20 +120,21 @@ export async function POST() {
   }
 }
 
-function generateReminderEmail(appointment: {
+async function generateReminderEmail(appointment: {
   clientName: string
   title: string
   startTime: Date
   endTime: Date
   description?: string | null
   location?: string | null
-}): string {
+}): Promise<string> {
+  const contact = await getContactSettings()
   return `
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
-        <title>Lembrete de Reunião - Vibromak</title>
+        <title>Lembrete de Reunião - ${contact.companyName}</title>
         <style>
             body { 
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -228,7 +239,7 @@ function generateReminderEmail(appointment: {
     <body>
         <div class="container">
             <div class="header">
-                <img src="https://vibromak.com.br/wp-content/uploads/2024/05/cropped-Design-sem-nome-300x47.png" alt="Vibromak" class="logo" />
+                <img src="https://vibromak.com.br/wp-content/uploads/2024/05/cropped-Design-sem-nome-300x47.png" alt="${contact.companyName}" class="logo" />
                 <h1 class="header-title">Lembrete de Reunião</h1>
             </div>
             
@@ -284,19 +295,22 @@ function generateReminderEmail(appointment: {
 
                 <div class="contact-info">
                     <h3 style="margin-top: 0; color: #1E1E1E;">Informações de Contato</h3>
-                    <p>Telefone: <strong>(11) 99999-9999</strong> | Email: <strong>contato@vibromak.com.br</strong></p>
+                    <p>Telefone: <strong>${contact.companyPhone}</strong> | Email: <strong>${contact.contactEmail}</strong></p>
                 </div>
             </div>
             
             <div class="footer">
                 <p><strong>Aguardamos você!</strong></p>
-                <p>Sistema de Agendamento <span class="vibromak-orange">Vibromak</span> | Lembrete automático</p>
+                <p>Sistema de Agendamento <span class="vibromak-orange">${contact.companyName}</span> | Lembrete automático</p>
             </div>
         </div>
     </body>
     </html>
   `
 }
+
+
+
 
 
 

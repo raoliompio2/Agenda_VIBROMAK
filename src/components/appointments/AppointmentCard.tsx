@@ -14,7 +14,7 @@ interface AppointmentCardProps {
     startTime: Date
     endTime: Date
     status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
-    type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'OTHER'
+    type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'PARTICULAR' | 'VIAGEM' | 'OTHER'
     location?: string
     clientName: string
     clientEmail: string

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +18,7 @@ import { User, Mail, Phone, Building, Calendar, Clock, FileText, Users } from 'l
 interface AppointmentFormData {
   title: string
   description: string
-  type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'OTHER'
+  type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'PARTICULAR' | 'VIAGEM' | 'OTHER'
   duration: number // em minutos
   clientName: string
   clientEmail: string
@@ -53,6 +54,7 @@ export function AppointmentForm({
   submitText = 'Solicitar Agendamento',
   onDateChange
 }: AppointmentFormProps) {
+  const { data: session } = useSession()
   const [formData, setFormData] = useState<AppointmentFormData>({
     title: initialData.title || '',
     description: initialData.description || '',
@@ -183,6 +185,12 @@ export function AppointmentForm({
                       <SelectItem value="MEETING">Reunião Presencial</SelectItem>
                       <SelectItem value="CALL">Ligação/Videochamada</SelectItem>
                       <SelectItem value="PRESENTATION">Apresentação</SelectItem>
+                      {(session?.user?.role === 'ADMIN' || session?.user?.role === 'SECRETARY') && (
+                        <>
+                          <SelectItem value="PARTICULAR">🔒 Compromisso Particular</SelectItem>
+                          <SelectItem value="VIAGEM">✈️ Viagem</SelectItem>
+                        </>
+                      )}
                       <SelectItem value="OTHER">Outro</SelectItem>
                     </SelectContent>
                   </Select>

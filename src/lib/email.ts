@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { prisma } from './prisma'
 
 interface EmailOptions {
   to: string | string[]
@@ -12,8 +13,8 @@ export const emailConfig = {
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER || 'app@opendreams.com.br',
-    pass: process.env.SMTP_PASS || 'Rafael@20213413',
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
   },
   tls: {
     rejectUnauthorized: false
@@ -21,6 +22,16 @@ export const emailConfig = {
 }
 
 export const transporter = nodemailer.createTransport(emailConfig)
+
+// Função para buscar configurações de contato
+async function getContactSettings() {
+  const settings = await prisma.systemSettings.findFirst()
+  return {
+    companyPhone: settings?.companyPhone || '(14) 3415-4493',
+    contactEmail: settings?.contactEmail || 'recepcao@vibromak.com.br',
+    companyName: settings?.companyName || 'Vibromak'
+  }
+}
 
 export async function sendEmail({ to, subject, html, cc }: EmailOptions) {
   try {
@@ -237,14 +248,15 @@ export function generateAppointmentRequestEmail(appointment: {
   `
 }
 
-export function generateAppointmentConfirmationEmail(appointment: {
+export async function generateAppointmentConfirmationEmail(appointment: {
   clientName: string
   title: string
   startTime: Date
   endTime: Date
   description?: string
   location?: string
-}): string {
+}): Promise<string> {
+  const contact = await getContactSettings()
   return `
     <!DOCTYPE html>
     <html>
@@ -412,13 +424,13 @@ export function generateAppointmentConfirmationEmail(appointment: {
                 <div class="contact-info">
                     <h3 style="margin-top: 0; color: #1E1E1E;">Informações de Contato</h3>
                     <p><strong>Em caso de cancelamento ou reagendamento</strong>, entre em contato conosco com antecedência mínima de 24 horas.</p>
-                    <p>Telefone: <strong>(11) 99999-9999</strong> | Email: <strong>contato@vibromak.com.br</strong></p>
+                    <p>Telefone: <strong>${contact.companyPhone}</strong> | Email: <strong>${contact.contactEmail}</strong></p>
                 </div>
             </div>
             
             <div class="footer">
-                <p><strong>Obrigado por escolher a Vibromak!</strong></p>
-                <p>Sistema de Agendamento <span class="vibromak-orange">Vibromak</span> | Enviado automaticamente</p>
+                <p><strong>Obrigado por escolher a ${contact.companyName}!</strong></p>
+                <p>Sistema de Agendamento <span class="vibromak-orange">${contact.companyName}</span> | Enviado automaticamente</p>
             </div>
         </div>
     </body>
@@ -426,12 +438,13 @@ export function generateAppointmentConfirmationEmail(appointment: {
   `
 }
 
-export function generateCancellationEmail(appointment: {
+export async function generateCancellationEmail(appointment: {
   clientName: string
   title: string
   startTime: Date
   endTime: Date
-}): string {
+}): Promise<string> {
+  const contact = await getContactSettings()
   return `
     <!DOCTYPE html>
     <html>
@@ -575,14 +588,14 @@ export function generateCancellationEmail(appointment: {
                 <div class="contact-info">
                     <h3 style="margin-top: 0; color: #1E1E1E;">Reagendar ou Dúvidas</h3>
                     <p>Se desejar reagendar ou tiver alguma dúvida, entre em contato conosco:</p>
-                    <p>Telefone: <strong>(11) 99999-9999</strong> | Email: <strong>contato@vibromak.com.br</strong></p>
+                    <p>Telefone: <strong>${contact.companyPhone}</strong> | Email: <strong>${contact.contactEmail}</strong></p>
                     <p>Ou acesse nosso sistema de agendamento online para uma nova solicitação.</p>
                 </div>
             </div>
             
             <div class="footer">
                 <p><strong>Agradecemos sua compreensão.</strong></p>
-                <p>Sistema de Agendamento <span class="vibromak-orange">Vibromak</span> | Enviado automaticamente</p>
+                <p>Sistema de Agendamento <span class="vibromak-orange">${contact.companyName}</span> | Enviado automaticamente</p>
             </div>
         </div>
     </body>

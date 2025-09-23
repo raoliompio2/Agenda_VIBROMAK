@@ -106,7 +106,7 @@ export async function sendConfirmationNotification(appointmentId: string) {
       return false
     }
 
-    const emailHtml = generateAppointmentConfirmationEmail({
+    const emailHtml = await generateAppointmentConfirmationEmail({
       clientName: appointment.clientName,
       title: appointment.title,
       startTime: appointment.startTime,
@@ -179,15 +179,17 @@ export async function sendCancellationNotification(appointmentId: string) {
       return false
     }
 
+    const emailHtml = await generateCancellationEmail({
+      clientName: appointment.clientName,
+      title: appointment.title,
+      startTime: appointment.startTime,
+      endTime: appointment.endTime
+    })
+
     const result = await sendEmail({
       to: appointment.clientEmail,
       subject: `Agendamento Cancelado - ${appointment.title}`,
-      html: generateCancellationEmail({
-        clientName: appointment.clientName,
-        title: appointment.title,
-        startTime: appointment.startTime,
-        endTime: appointment.endTime
-      })
+      html: emailHtml
     })
 
     // Registrar notificação no banco

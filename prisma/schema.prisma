@@ -138,6 +138,8 @@ model SystemSettings {
   directorName      String @default("Diretor")
   directorEmail     String @default("")
   secretaryEmail    String @default("")
+  companyPhone      String @default("")
+  contactEmail      String @default("")
   
   updatedAt DateTime @updatedAt
 }
@@ -158,6 +160,8 @@ enum AppointmentType {
   MEETING
   CALL
   PRESENTATION
+  PARTICULAR
+  VIAGEM
   OTHER
 }
 

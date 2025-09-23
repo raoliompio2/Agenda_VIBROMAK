@@ -29,7 +29,7 @@ interface Appointment {
   startTime: Date
   endTime: Date
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
-  type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'OTHER'
+  type: 'MEETING' | 'CALL' | 'PRESENTATION' | 'PARTICULAR' | 'VIAGEM' | 'OTHER'
   location?: string
   clientName: string
   clientEmail: string
@@ -56,6 +56,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [typeFilter, setTypeFilter] = useState<string>('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -65,13 +66,14 @@ export default function AdminDashboard() {
     }
     fetchAppointments()
     fetchStats()
-  }, [session, status, selectedDate])
+  }, [session, status, selectedDate, typeFilter])
 
   const fetchAppointments = async () => {
     setLoading(true)
     try {
       const dateStr = selectedDate.toISOString().split('T')[0]
-      const response = await fetch(`/api/appointments?date=${dateStr}`)
+      const typeParam = typeFilter ? `&type=${typeFilter}` : ''
+      const response = await fetch(`/api/appointments?date=${dateStr}${typeParam}`)
       const data = await response.json()
       
       setAppointments(data.appointments.map((apt: any) => ({
@@ -309,6 +311,68 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Filtros (para ADMIN e SECRETARY) */}
+        {(session?.user?.role === 'ADMIN' || session?.user?.role === 'SECRETARY') && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">🔍 Filtros</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={typeFilter === '' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTypeFilter('')}
+                >
+                  Todos
+                </Button>
+                <Button
+                  variant={typeFilter === 'MEETING' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTypeFilter('MEETING')}
+                >
+                  🤝 Reuniões
+                </Button>
+                <Button
+                  variant={typeFilter === 'CALL' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTypeFilter('CALL')}
+                >
+                  📞 Ligações
+                </Button>
+                <Button
+                  variant={typeFilter === 'PRESENTATION' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTypeFilter('PRESENTATION')}
+                >
+                  📊 Apresentações
+                </Button>
+                <Button
+                  variant={typeFilter === 'PARTICULAR' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTypeFilter('PARTICULAR')}
+                >
+                  🔒 Particulares
+                </Button>
+                <Button
+                  variant={typeFilter === 'VIAGEM' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTypeFilter('VIAGEM')}
+                >
+                  ✈️ Viagens
+                </Button>
+                <Button
+                  variant={typeFilter === 'OTHER' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTypeFilter('OTHER')}
+                >
+                  📝 Outros
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
