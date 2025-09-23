@@ -4,6 +4,10 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// Configuração para evitar pré-renderização
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const settingsSchema = z.object({
   workingHoursStart: z.string().regex(/^\d{2}:\d{2}$/, 'Formato inválido (HH:MM)'),
   workingHoursEnd: z.string().regex(/^\d{2}:\d{2}$/, 'Formato inválido (HH:MM)'),
@@ -107,6 +111,9 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Verificar método permitido
+    console.log('PUT method called on /api/settings')
+    
     const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json(
@@ -135,6 +142,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({
         message: 'Configurações atualizadas com sucesso',
         settings
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
       })
     } catch (updateError) {
       // Se falhar, tentar apenas com campos básicos
@@ -159,6 +172,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({
         message: 'Configurações atualizadas com sucesso (modo compatibilidade)',
         settings: settingsWithDefaults
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        }
       })
     }
 
@@ -177,5 +196,18 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// Handler para requisições OPTIONS (CORS preflight)
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    }
+  })
 }
 

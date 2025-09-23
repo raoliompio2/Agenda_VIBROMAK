@@ -24,6 +24,8 @@ interface SystemSettings {
   directorName: string
   directorEmail: string
   secretaryEmail: string
+  companyPhone?: string
+  contactEmail?: string
 }
 
 export default function SettingsPage() {
@@ -40,7 +42,9 @@ export default function SettingsPage() {
     companyName: '',
     directorName: '',
     directorEmail: '',
-    secretaryEmail: ''
+    secretaryEmail: '',
+    companyPhone: '',
+    contactEmail: ''
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -195,6 +199,25 @@ export default function SettingsPage() {
                     value={settings?.directorName || ''}
                     onChange={(e) => updateSetting('directorName', e.target.value)}
                     placeholder="Nome do diretor"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="companyPhone">Telefone da Empresa</Label>
+                  <Input
+                    id="companyPhone"
+                    value={settings?.companyPhone || ''}
+                    onChange={(e) => updateSetting('companyPhone', e.target.value)}
+                    placeholder="(14) 3415-4493"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contactEmail">Email de Contato</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={settings?.contactEmail || ''}
+                    onChange={(e) => updateSetting('contactEmail', e.target.value)}
+                    placeholder="contato@seudominio.com.br"
                   />
                 </div>
               </div>
