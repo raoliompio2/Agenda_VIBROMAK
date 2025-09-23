@@ -76,9 +76,9 @@ export default function SettingsPage() {
     setMessage('')
     
     try {
-      // TESTE: Usar rota simplificada primeiro
-      console.log('Testando rota simplificada...')
-      const response = await fetch('/api/settings-simple', {
+      // TESTE: Voltando para rota original com bypass total
+      console.log('Testando rota original com bypass...')
+      const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
