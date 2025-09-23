@@ -112,16 +112,27 @@ export async function PUT(request: NextRequest) {
   try {
     console.log('PUT method called on /api/settings')
     
+    // Verificar autenticação
+    console.log('Checking authentication...')
     const session = await getServerSession(authOptions)
+    console.log('Session:', session ? 'exists' : 'null')
+    
     if (!session) {
+      console.log('No session found, returning 401')
       return NextResponse.json(
         { error: 'Acesso negado' },
         { status: 401 }
       )
     }
 
+    // Ler e validar dados
+    console.log('Reading request body...')
     const body = await request.json()
+    console.log('Request body:', JSON.stringify(body, null, 2))
+    
+    console.log('Validating data with schema...')
     const validatedData = settingsSchema.parse(body)
+    console.log('Validation successful:', JSON.stringify(validatedData, null, 2))
 
     // Separar campos que podem não existir no schema atual
     const { companyPhone, contactEmail, ...basicData } = validatedData
@@ -129,6 +140,8 @@ export async function PUT(request: NextRequest) {
     try {
       // Tentar atualizar com todos os campos
       console.log('Attempting database upsert with all fields...')
+      console.log('Data to upsert:', JSON.stringify(validatedData, null, 2))
+      
       const settings = await prisma.systemSettings.upsert({
         where: { id: 'settings' },
         update: validatedData,
@@ -189,22 +202,41 @@ export async function PUT(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Erro ao atualizar configurações:', error)
-    console.error('Error details:', error instanceof Error ? error.message : error)
-    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack available')
+    console.error('=== ERRO COMPLETO NA API SETTINGS ===')
+    console.error('Error object:', error)
+    console.error('Error type:', typeof error)
+    console.error('Error constructor:', error?.constructor?.name)
+    
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     
     if (error instanceof z.ZodError) {
-      console.error('Validation errors:', error.errors)
+      console.error('=== ZOD VALIDATION ERRORS ===')
+      console.error('Validation errors:', JSON.stringify(error.errors, null, 2))
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { 
+          error: 'Dados inválidos', 
+          details: error.errors,
+          type: 'validation_error'
+        },
         { status: 400 }
       )
+    }
+
+    // Se é erro do Prisma
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('=== PRISMA ERROR ===')
+      console.error('Prisma error code:', (error as any).code)
+      console.error('Prisma error meta:', (error as any).meta)
     }
 
     return NextResponse.json(
       { 
         error: 'Erro interno do servidor',
-        details: error instanceof Error ? error.message : 'Erro desconhecido'
+        details: error instanceof Error ? error.message : 'Erro desconhecido',
+        type: 'internal_server_error'
       },
       { status: 500 }
     )
