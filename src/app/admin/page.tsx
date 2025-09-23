@@ -155,7 +155,7 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleReschedule = (id: string) => {
+  const handleEdit = (id: string) => {
     router.push(`/admin/appointments/${id}/edit`)
   }
 
@@ -412,6 +412,7 @@ export default function AdminDashboard() {
                     onConfirm={handleConfirm}
                     onCancel={handleCancel}
                     showDetails={showAppointmentDetails}
+                    onEdit={handleEdit}
                     onUpdate={() => {
                       fetchAppointments()
                       fetchStats()
@@ -445,6 +446,7 @@ export default function AdminDashboard() {
                     onConfirm={handleConfirm}
                     onCancel={handleCancel}
                     showDetails={showAppointmentDetails}
+                    onEdit={handleEdit}
                     onUpdate={() => {
                       fetchAppointments()
                       fetchStats()
@@ -475,6 +477,7 @@ export default function AdminDashboard() {
                     onCancel={handleCancel}
                     onReactivate={handleReactivate}
                     showDetails={showAppointmentDetails}
+                    onEdit={handleEdit}
                     onUpdate={() => {
                       fetchAppointments()
                       fetchStats()
@@ -504,6 +507,7 @@ export default function AdminDashboard() {
                     onConfirm={handleConfirm}
                     onCancel={handleCancel}
                     showDetails={showAppointmentDetails}
+                    onEdit={handleEdit}
                     onUpdate={() => {
                       fetchAppointments()
                       fetchStats()

@@ -183,7 +183,7 @@ export default function SettingsPage() {
                   <Label htmlFor="companyName">Nome da Empresa</Label>
                   <Input
                     id="companyName"
-                    value={settings.companyName}
+                    value={settings?.companyName || ''}
                     onChange={(e) => updateSetting('companyName', e.target.value)}
                     placeholder="Nome da sua empresa"
                   />
@@ -192,7 +192,7 @@ export default function SettingsPage() {
                   <Label htmlFor="directorName">Nome do Diretor</Label>
                   <Input
                     id="directorName"
-                    value={settings.directorName}
+                    value={settings?.directorName || ''}
                     onChange={(e) => updateSetting('directorName', e.target.value)}
                     placeholder="Nome do diretor"
                   />
@@ -216,7 +216,7 @@ export default function SettingsPage() {
                   <Input
                     id="directorEmail"
                     type="email"
-                    value={settings.directorEmail}
+                    value={settings?.directorEmail || ''}
                     onChange={(e) => updateSetting('directorEmail', e.target.value)}
                     placeholder="diretor@seudominio.com.br"
                   />
@@ -229,7 +229,7 @@ export default function SettingsPage() {
                   <Input
                     id="secretaryEmail"
                     type="email"
-                    value={settings.secretaryEmail}
+                    value={settings?.secretaryEmail || ''}
                     onChange={(e) => updateSetting('secretaryEmail', e.target.value)}
                     placeholder="secretaria@seudominio.com.br"
                   />
@@ -256,7 +256,7 @@ export default function SettingsPage() {
                   <Input
                     id="workingHoursStart"
                     type="time"
-                    value={settings.workingHoursStart}
+                    value={settings?.workingHoursStart || '09:00'}
                     onChange={(e) => updateSetting('workingHoursStart', e.target.value)}
                   />
                 </div>
@@ -265,7 +265,7 @@ export default function SettingsPage() {
                   <Input
                     id="workingHoursEnd"
                     type="time"
-                    value={settings.workingHoursEnd}
+                    value={settings?.workingHoursEnd || '18:00'}
                     onChange={(e) => updateSetting('workingHoursEnd', e.target.value)}
                   />
                 </div>
@@ -275,7 +275,7 @@ export default function SettingsPage() {
                 <Label>Dias de Funcionamento</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
                   {Object.entries(dayNames).map(([value, label]) => {
-                    const isSelected = settings.workingDays.split(',').includes(value)
+                    const isSelected = (settings?.workingDays || '1,2,3,4,5').split(',').includes(value)
                     return (
                       <Button
                         key={value}
@@ -283,7 +283,7 @@ export default function SettingsPage() {
                         variant={isSelected ? "default" : "outline"}
                         size="sm"
                         onClick={() => {
-                          const days = settings.workingDays.split(',').filter(Boolean)
+                          const days = (settings?.workingDays || '1,2,3,4,5').split(',').filter(Boolean)
                           if (isSelected) {
                             const newDays = days.filter(day => day !== value)
                             updateSetting('workingDays', newDays.join(','))
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                 <div>
                   <Label htmlFor="meetingDuration">Duração da Reunião (minutos)</Label>
                   <Select 
-                    value={settings.meetingDuration.toString()} 
+                    value={(settings?.meetingDuration || 60).toString()} 
                     onValueChange={(value) => updateSetting('meetingDuration', parseInt(value))}
                   >
                     <SelectTrigger>
@@ -334,7 +334,7 @@ export default function SettingsPage() {
                 <div>
                   <Label htmlFor="bufferTime">Tempo entre Reuniões (minutos)</Label>
                   <Select 
-                    value={settings.bufferTime.toString()} 
+                    value={(settings?.bufferTime || 15).toString()} 
                     onValueChange={(value) => updateSetting('bufferTime', parseInt(value))}
                   >
                     <SelectTrigger>
@@ -353,7 +353,7 @@ export default function SettingsPage() {
                 <div>
                   <Label htmlFor="reminderHours">Lembrete Antes (horas)</Label>
                   <Select 
-                    value={settings.reminderHours.toString()} 
+                    value={(settings?.reminderHours || 24).toString()} 
                     onValueChange={(value) => updateSetting('reminderHours', parseInt(value))}
                   >
                     <SelectTrigger>

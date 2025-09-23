@@ -15,7 +15,9 @@ const settingsSchema = z.object({
   companyName: z.string().min(1),
   directorName: z.string().min(1),
   directorEmail: z.string().email().optional().or(z.literal('')),
-  secretaryEmail: z.string().email().optional().or(z.literal(''))
+  secretaryEmail: z.string().email().optional().or(z.literal('')),
+  companyPhone: z.string().optional(),
+  contactEmail: z.string().email().optional().or(z.literal(''))
 })
 
 export async function GET() {
@@ -36,10 +38,12 @@ export async function GET() {
           bufferTime: 15,
           reminderHours: 24,
           autoApproval: false,
-          companyName: 'Empresa',
-          directorName: 'Diretor',
-          directorEmail: '',
-          secretaryEmail: ''
+          companyName: 'Vibromak',
+          directorName: 'Rogério',
+          directorEmail: 'rogerio@vibromak.com.br',
+          secretaryEmail: 'recepcao@vibromak.com.br',
+          companyPhone: '(14) 3415-4493',
+          contactEmail: 'recepcao@vibromak.com.br'
         }
       })
     }

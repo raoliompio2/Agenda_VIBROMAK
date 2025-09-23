@@ -12,6 +12,7 @@ const updateAppointmentSchema = z.object({
   startTime: z.string().datetime().optional(),
   endTime: z.string().datetime().optional(),
   location: z.string().optional(),
+  type: z.enum(['MEETING', 'CALL', 'PRESENTATION', 'PARTICULAR', 'VIAGEM', 'OTHER']).optional(),
 })
 
 export async function GET(
@@ -139,6 +140,7 @@ export async function PATCH(
     if (validatedData.title) updateData.title = validatedData.title
     if (validatedData.description !== undefined) updateData.description = validatedData.description
     if (validatedData.location !== undefined) updateData.location = validatedData.location
+    if (validatedData.type) updateData.type = validatedData.type
     if (validatedData.startTime) updateData.startTime = new Date(validatedData.startTime)
     if (validatedData.endTime) updateData.endTime = new Date(validatedData.endTime)
 

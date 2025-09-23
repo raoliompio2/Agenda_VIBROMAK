@@ -15,6 +15,7 @@ import {
   CheckCircle, 
   XCircle,
   AlertCircle,
+  Edit,
   FileText,
   RotateCcw,
   Eye
@@ -45,6 +46,7 @@ interface AppointmentConfirmationProps {
   onReactivate?: (id: string) => Promise<void>
   onUpdate?: () => void
   showDetails?: (appointment: Appointment) => void
+  onEdit?: (id: string) => void
 }
 
 const statusColors = {
@@ -76,7 +78,8 @@ export function AppointmentConfirmation({
   onCancel,
   onReactivate,
   onUpdate,
-  showDetails 
+  showDetails,
+  onEdit 
 }: AppointmentConfirmationProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const { showToast, Toast } = useToast()
@@ -257,6 +260,16 @@ export function AppointmentConfirmation({
                         Detalhes
                       </Button>
                     )}
+                    {onEdit && (
+                      <Button
+                        variant="outline"
+                        onClick={() => onEdit(appointment.id)}
+                        className="gap-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Editar
+                      </Button>
+                    )}
                     <Button
                       onClick={() => handleConfirm(appointment)}
                       disabled={loading === appointment.id}
@@ -321,6 +334,16 @@ export function AppointmentConfirmation({
                         >
                           <Eye className="h-3 w-3" />
                           Detalhes
+                        </Button>
+                      )}
+                      {onEdit && (
+                        <Button
+                          variant="outline"
+                          onClick={() => onEdit(appointment.id)}
+                          className="gap-1"
+                        >
+                          <Edit className="h-3 w-3" />
+                          Editar
                         </Button>
                       )}
                       <Button
