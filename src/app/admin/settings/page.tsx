@@ -76,8 +76,6 @@ export default function SettingsPage() {
     setMessage('')
     
     try {
-      // TESTE: Voltando para rota original com bypass total
-      console.log('Testando rota original com bypass...')
       const response = await fetch('/api/settings', {
         method: 'PUT',
         headers: {
@@ -87,13 +85,11 @@ export default function SettingsPage() {
       })
 
       if (response.ok) {
-        const result = await response.json()
-        setMessage(`TESTE: ${result.message} (${result.timestamp})`)
-        setTimeout(() => setMessage(''), 5000)
+        setMessage('Configurações salvas com sucesso!')
+        setTimeout(() => setMessage(''), 3000)
       } else {
         const error = await response.json()
-        setMessage(`ERRO ${response.status}: ${error.error} - ${error.errorMessage || ''}`)
-        console.error('Erro completo:', error)
+        setMessage(`Erro: ${error.error}`)
       }
     } catch (error) {
       setMessage('Erro ao salvar configurações')

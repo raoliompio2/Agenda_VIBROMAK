@@ -109,32 +109,11 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-  // EMERGÊNCIA: Retornar sucesso imediato para teste
-  return NextResponse.json({
-    message: 'EMERGÊNCIA: PUT recebido com sucesso (bypass total)',
-    timestamp: new Date().toISOString(),
-    url: request.url
-  })
-
-  /* CÓDIGO ORIGINAL COMENTADO PARA DEBUG
   try {
-    // Verificar método permitido
     console.log('PUT method called on /api/settings')
     
-    let session;
-    try {
-      session = await getServerSession(authOptions)
-      console.log('Session check result:', session ? 'Session found' : 'No session')
-    } catch (authError) {
-      console.error('Error getting session:', authError)
-      return NextResponse.json(
-        { error: 'Erro de autenticação', details: authError instanceof Error ? authError.message : 'Unknown auth error' },
-        { status: 500 }
-      )
-    }
-    
+    const session = await getServerSession(authOptions)
     if (!session) {
-      console.log('Unauthorized access attempt')
       return NextResponse.json(
         { error: 'Acesso negado' },
         { status: 401 }
@@ -142,20 +121,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    console.log('Request body received:', JSON.stringify(body, null, 2))
-    
-    // TESTE: Retornar sucesso sem validação nem banco para verificar se o problema é aqui
-    if (body.debug === true) {
-      console.log('Debug mode - skipping validation and database')
-      return NextResponse.json({
-        message: 'Debug mode - requisição recebida com sucesso',
-        receivedData: body
-      })
-    }
-    
     const validatedData = settingsSchema.parse(body)
-    console.log('Data validated successfully:', JSON.stringify(validatedData, null, 2))
-  CÓDIGO ORIGINAL COMENTADO PARA DEBUG */
 
     // Separar campos que podem não existir no schema atual
     const { companyPhone, contactEmail, ...basicData } = validatedData
@@ -180,7 +146,10 @@ export async function PUT(request: NextRequest) {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       })
     } catch (updateError) {
@@ -211,7 +180,10 @@ export async function PUT(request: NextRequest) {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       })
     }
@@ -251,4 +223,3 @@ export async function OPTIONS() {
     }
   })
 }
-
