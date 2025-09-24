@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
               </div>
               
               <p>Acesse o painel administrativo para mais detalhes ou alterações.</p>
-              <p>Atenciosamente,<br>Sistema de Agenda Executiva</p>
+              <p>Atenciosamente,<br>Recepção Vibromak</p>
             </div>
             
             <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
@@ -175,6 +175,7 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
 
 
 

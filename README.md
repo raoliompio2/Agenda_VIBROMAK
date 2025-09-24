@@ -1,4 +1,4 @@
-# 📅 Sistema de Agenda Executiva
+# 📅 Sistema de Recepção Vibromak
 
 Sistema completo de agendamento online para reuniões executivas, desenvolvido com Next.js 14, TypeScript, Prisma e PostgreSQL.
 
@@ -61,7 +61,7 @@ SMTP_HOST=mail.seudominio.com.br
 SMTP_PORT=587
 SMTP_USER=agenda@seudominio.com.br
 SMTP_PASS=sua-senha-smtp
-SMTP_FROM="Agenda Executiva <agenda@seudominio.com.br>"
+SMTP_FROM="Recepção Vibromak <agenda@seudominio.com.br>"
 
 # Director Information
 DIRECTOR_NAME="Nome do Diretor"
@@ -134,7 +134,7 @@ SMTP_HOST=mail.minhaempresa.com.br
 SMTP_PORT=587
 SMTP_USER=agenda@minhaempresa.com.br
 SMTP_PASS=minhasenha123
-SMTP_FROM="Agenda Executiva <agenda@minhaempresa.com.br>"
+SMTP_FROM="Recepção Vibromak <agenda@minhaempresa.com.br>"
 ```
 
 ## 🏗️ Estrutura do Projeto

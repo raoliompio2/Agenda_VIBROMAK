@@ -1,6 +1,6 @@
 # 🚀 Guia Rápido de Instalação
 
-Sistema de Agenda Executiva - Configuração para Windows
+Sistema de Recepção Vibromak - Configuração para Windows
 
 ## ✅ Pré-requisitos
 
@@ -57,7 +57,7 @@ SMTP_HOST=smtppro.zoho.com
 SMTP_PORT=587
 SMTP_USER=app@opendreams.com.br
 SMTP_PASS=Rafael@20213413
-SMTP_FROM="Agenda Executiva <app@opendreams.com.br>"
+SMTP_FROM="Recepção Vibromak <app@opendreams.com.br>"
 
 # Informações da empresa (OpenDreams/Vibromak)
 COMPANY_NAME="OpenDreams"

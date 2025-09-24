@@ -14,7 +14,7 @@ function question(query) {
 }
 
 async function setupProject() {
-  console.log('\n🚀 Configurando Sistema de Agenda Executiva...\n');
+  console.log('\n🚀 Configurando Sistema de Recepção Vibromak...\n');
 
   try {
     // 1. Verificar se o .env.local existe
@@ -42,7 +42,7 @@ SMTP_HOST=${smtpHost}
 SMTP_PORT=587
 SMTP_USER=${smtpUser}
 SMTP_PASS=${smtpPass}
-SMTP_FROM="Agenda Executiva <${smtpUser}>"
+SMTP_FROM="Recepção Vibromak <${smtpUser}>"
 
 # Director Information
 DIRECTOR_NAME="${directorName}"

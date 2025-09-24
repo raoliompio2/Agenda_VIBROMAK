@@ -7,7 +7,7 @@ import { Header } from '@/components/layout/Header'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Vibromak - Agenda Executiva',
+  title: 'Vibromak - Recepção Vibromak',
   description: 'Sistema de agendamento online para reuniões executivas da Vibromak',
   keywords: 'vibromak, agenda, agendamento, reuniões, executivo, painel',
   authors: [{ name: 'Vibromak' }],
