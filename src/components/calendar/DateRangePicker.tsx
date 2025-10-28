@@ -87,8 +87,8 @@ export function DateRangePicker({
     
     const result = isWorkingDay && isAfterMinDate && isBeforeMaxDate
     
-    // Debug apenas quando for chamar de dentro do handleDateClick
-    if (window.location.pathname === '/teste-dias' || window.location.pathname === '/') {
+    // Debug apenas quando for chamar de dentro do handleDateClick (e se window estiver disponível)
+    if (typeof window !== 'undefined' && (window.location.pathname === '/teste-dias' || window.location.pathname === '/')) {
       console.log('   📅 isDateSelectable para', date.toLocaleDateString('pt-BR'), ':', {
         dayOfWeek,
         workingDays,
