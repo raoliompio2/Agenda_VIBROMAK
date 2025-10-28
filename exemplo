@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simulador de Vendas: Parcelas Fixas vs Amortizadas</title>
+<style>
+  :root{
+    --bg:#0b1020; --card:#131a33; --ink:#e8edff; --muted:#9aa6ff; --accent:#7ea8ff; --good:#2bd98a; --warn:#ffd86b; --danger:#ff6b6b; --grid:#1c254a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Helvetica, Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji'; background:linear-gradient(180deg,#0b1020,#0b1020 40%, #0d142a); color:var(--ink)}
+  .wrap{max-width:1400px; margin:auto; padding:32px 20px}
+  .hero{display:grid; grid-template-columns:1.2fr .8fr; gap:28px; align-items:start; margin-bottom:24px}
+  h1{font-size:clamp(28px,4vw,44px); line-height:1.08; margin:0 0 12px}
+  h2{font-size:clamp(22px,3vw,32px); margin:0 0 16px; font-weight:800}
+  h3{font-size:clamp(18px,2.5vw,24px); margin:0 0 12px; font-weight:700}
+  p.lead{color:var(--muted); font-size:clamp(14px,2.2vw,17px); line-height:1.5}
+  .card{background:linear-gradient(180deg, rgba(29,38,77,.7), rgba(16,24,48,.7)); border:1px solid #253061; border-radius:18px; padding:24px; box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px rgba(0,0,0,.25); margin-bottom:20px}
+  .card-highlight{border:2px solid var(--accent); background:linear-gradient(180deg, rgba(29,38,77,.9), rgba(16,24,48,.9))}
+  .row{display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px}
+  .btn{background:var(--accent); color:#0c1328; border:0; border-radius:12px; padding:12px 18px; font-weight:700; cursor:pointer; font-size:15px; transition:all .2s}
+  .btn:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(126,168,255,.3)}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid #33407a}
+  .btnbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  input, select{background:#0f1734; color:var(--ink); border:1px solid #253061; padding:12px 14px; border-radius:12px; width:100%; font-size:15px}
+  label{font-size:13px; color:#a7b2ff; font-weight:600; display:block; margin-bottom:6px}
+  .kpi{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-top:20px}
+  .kpi .box{background:#0d1530; border:1px solid #22306b; border-radius:14px; padding:16px}
+  .kpi .val{font-size:28px; font-weight:800; margin-top:6px}
+  .kpi .label{font-size:12px; color:#9db0ff; text-transform:uppercase; letter-spacing:0.5px}
+  .pill{display:inline-flex; align-items:center; gap:8px; background:#0f1a3a; border:1px solid #2a397a; border-radius:999px; padding:8px 14px; font-size:13px; color:#b7c2ff; font-weight:600}
+  .tabbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px}
+  .tab{padding:10px 16px; border-radius:12px; border:1px solid #2a397a; cursor:pointer; color:#c4cdff; font-weight:600; transition:all .2s}
+  .tab.active{background:var(--accent); color:#0b1020; border-color:transparent; font-weight:800}
+  .tab:hover:not(.active){background:rgba(126,168,255,.1)}
+  .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:16px}
+  .col-4{grid-column:span 4}
+  .col-6{grid-column:span 6}
+  .col-12{grid-column:span 12}
+  .table{width:100%; border-collapse:collapse; font-size:14px}
+  .table th,.table td{border-bottom:1px solid #2b366b; padding:12px 10px; text-align:right}
+  .table th:first-child,.table td:first-child{text-align:left}
+  .table th{background:rgba(126,168,255,.05); font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent)}
+  .table tr.highlight{background:var(--good); color:#0b1020; font-weight:800}
+  .table tr.highlight td{border-color:rgba(0,0,0,.1)}
+  .tag{display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:10px; background:#0e1a38; border:1px solid #24336e; color:#b9c5ff; font-size:13px; font-weight:600; margin-bottom:12px}
+  .tag.green{background:rgba(43,217,138,.1); border-color:var(--good); color:var(--good)}
+  .tag.blue{background:rgba(126,168,255,.1); border-color:var(--accent); color:var(--accent)}
+  .legend{display:flex; gap:16px; align-items:center; font-size:13px; color:#bcd0ff; margin-bottom:12px}
+  .legend .dot{width:12px; height:12px; border-radius:50%}
+  .chart{height:320px; position:relative; background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)); border:1px solid #27356b; border-radius:14px; overflow:hidden; padding:16px}
+  .chart canvas{width:100%; height:100%}
+  .note{font-size:13px; color:#9db0ff; line-height:1.6}
+  .highlight-box{background:rgba(43,217,138,.08); border:2px solid var(--good); border-radius:12px; padding:16px; margin:12px 0}
+  .comparison-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-top:20px}
+  .comparison-card{background:#0d1530; border:1px solid #22306b; border-radius:14px; padding:18px}
+  .comparison-card h4{margin:0 0 12px; font-size:18px; text-align:center}
+  .big-number{font-size:36px; font-weight:800; text-align:center; margin:8px 0}
+  .diff-positive{color:var(--good)}
+  .diff-negative{color:var(--danger)}
+  @media(max-width:980px){
+    .hero{grid-template-columns:1fr}
+    .col-4, .col-6{grid-column:span 12}
+    .comparison-grid{grid-template-columns:1fr}
+  }
+  @media print{
+    body{background:#fff; color:#000}
+    .card{border:1px solid #ccc; box-shadow:none}
+    .btn{display:none}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Header -->
+    <section class="hero">
+      <div>
+        <h1>Simulador de Vendas: <span style="color:var(--accent)">Parcelas Fixas</span> vs <span style="color:var(--good)">Amortizadas</span></h1>
+        <p class="lead">Compare o impacto no fluxo de caixa vendendo em parcelas iguais versus parcelas decrescentes. Veja onde você recupera os 35% de custo e quanto entra de dinheiro vendendo 50 máquinas por mês.</p>
+      </div>
+      <div class="card">
+        <h3>Configurações</h3>
+        <div style="margin-bottom:16px">
+          <label>Custo do Produto (% do preço)</label>
+          <input type="number" id="inpCost" value="35" min="1" max="80" step="1" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label>Vendas por Mês (quantidade)</label>
+          <input type="number" id="inpQty" value="50" min="1" max="200" step="1" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label>Horizonte de Projeção (meses)</label>
+          <input type="number" id="inpHorizon" value="12" min="6" max="24" step="1" />
+        </div>
+        <div class="btnbar">
+          <button class="btn" id="btnPrint">📄 Exportar PDF</button>
+          <button class="btn ghost" id="btnReset">↻ Restaurar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Seleção de Produtos -->
+    <section class="card">
+      <h2>📦 Portfólio de Produtos</h2>
+      <div class="note" style="margin-bottom:16px">Selecione os produtos para compor a cesta de vendas. O simulador calculará o valor total e o impacto no fluxo.</div>
+      <table class="table" id="tblProdutos">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Preço Unitário</th>
+            <th style="text-align:center">Incluir</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Comparação de Modalidades -->
+    <section class="card card-highlight">
+      <h2>🔄 Comparação: Fixas vs Amortizadas</h2>
+      <div class="tabbar">
+        <div class="tab active" data-n="6">6x (Boleto)</div>
+        <div class="tab" data-n="8">8x</div>
+        <div class="tab" data-n="10">10x</div>
+        <div class="tab" data-n="12">12x (Cartão)</div>
+      </div>
+
+      <div class="kpi">
+        <div class="box">
+          <div class="label">Valor da Cesta</div>
+          <div class="val" id="kpiTotal">R$ 0</div>
+        </div>
+        <div class="box">
+          <div class="label">Custo (35%)</div>
+          <div class="val" id="kpiCusto">R$ 0</div>
+        </div>
+        <div class="box">
+          <div class="label">Recuperação (Fixas)</div>
+          <div class="val" id="kpiRecFix">-</div>
+        </div>
+        <div class="box" style="background:rgba(43,217,138,.1); border-color:var(--good)">
+          <div class="label" style="color:var(--good)">Recuperação (Amortizadas)</div>
+          <div class="val" style="color:var(--good)" id="kpiRecDec">-</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:24px">
+        <div class="col-6">
+          <div class="tag blue">💳 Parcelas Fixas (Iguais)</div>
+          <table class="table" id="tblFixas"></table>
+        </div>
+        <div class="col-6">
+          <div class="tag green">📊 Parcelas Amortizadas (Decrescentes)</div>
+          <table class="table" id="tblDec"></table>
+        </div>
+      </div>
+
+      <div class="highlight-box" style="margin-top:20px">
+        <strong>💡 Diferença Chave:</strong> O total é o mesmo (sem juros), mas as parcelas amortizadas concentram mais dinheiro no início, permitindo recuperar o custo de <strong id="txtCost">35%</strong> muito mais rápido (<strong id="txtRecDiff">2 parcelas antes</strong>).
+      </div>
+    </section>
+
+    <!-- Impacto no Fluxo de Caixa -->
+    <section class="card">
+      <h2>💰 Impacto no Fluxo de Caixa</h2>
+      <div class="pill" style="margin-bottom:16px">
+        Simulando <strong id="pillQty">50</strong> vendas/mês × <strong id="pillTotal">R$ 0</strong> = <strong id="pillMonth">R$ 0/mês</strong> em vendas
+      </div>
+
+      <div class="legend">
+        <span><span class="dot" style="background:#7ea8ff"></span> Parcelas Fixas</span>
+        <span><span class="dot" style="background:#2bd98a"></span> Parcelas Amortizadas</span>
+      </div>
+      <div class="chart"><canvas id="cvChart" width="1200" height="320"></canvas></div>
+
+      <div class="comparison-grid" style="margin-top:24px">
+        <div class="comparison-card">
+          <h4>Entrada 3 Primeiros Meses</h4>
+          <div class="big-number diff-positive" id="cmp3Meses">-</div>
+        </div>
+        <div class="comparison-card">
+          <h4>Entrada 6 Primeiros Meses</h4>
+          <div class="big-number diff-positive" id="cmp6Meses">-</div>
+        </div>
+        <div class="comparison-card">
+          <h4>Entrada Total (12 meses)</h4>
+          <div class="big-number" id="cmp12Meses" style="color:var(--muted)">-</div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:20px">
+        <div class="col-6">
+          <h3 style="font-size:18px">📅 Fluxo Mensal - Fixas</h3>
+          <table class="table" id="tblFluxoFix"></table>
+        </div>
+        <div class="col-6">
+          <h3 style="font-size:18px">📅 Fluxo Mensal - Amortizadas</h3>
+          <table class="table" id="tblFluxoDec"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Roteiro de Apresentação -->
+    <section class="card">
+      <h2>🎯 Como Apresentar ao Cliente</h2>
+      <ol style="line-height:1.8; color:#bcd0ff">
+        <li><strong>Contexto:</strong> "Trabalhamos com pagamento à vista (CIF) ou parcelado: até 12x sem juros no cartão, ou até 6x no boleto (sujeito a análise)."</li>
+        <li><strong>Mostre as tabelas:</strong> "Veja que o total é exatamente o mesmo, não tem juros. A diferença é só na distribuição das parcelas."</li>
+        <li><strong>Destaque a recuperação:</strong> "Com custo de <span id="txtCost2">35%</span>, na modalidade amortizada a gente recupera o investimento até a <strong>2ª parcela</strong>. Isso melhora nosso fluxo de caixa."</li>
+        <li><strong>Impacto em escala:</strong> "Vendendo <span id="txtQty">50</span> máquinas por mês, nos primeiros 3 meses entramos <strong id="txtDiff3">R$ X a mais</strong> com parcelas amortizadas."</li>
+        <li><strong>Transparência:</strong> "Na proposta discriminamos cada parcela com valores claros. Você paga o mesmo total, sem surpresas."</li>
+      </ol>
+    </section>
+
+    <footer class="note" style="text-align:center; margin:20px 0 40px">
+      Material interno para simulação e planejamento comercial. Valores sujeitos a alterações conforme política comercial vigente.
+    </footer>
+  </div>
+
+<script>
+// Produtos (base de preços atualizada)
+const produtosBase = [
+  {nome:"MOTOR COMPACTADOR RM120 (c/ embreagem)", preco:1890},
+  {nome:"MOTOR AVULSO RM120", preco:1690},
+  {nome:"EMBREAGEM EIXO CHAVETADO", preco:392},
+  {nome:"EMBREAGEM (5+ unidades)", preco:349},
+  {nome:"MOTOR VIBROMAK 7HP", preco:1505},
+  {nome:"MOTOR VIBROMAK 15HP", preco:2996.32},
+  {nome:"VK85 c/ motor Vibromak 7HP (sem CJ)", preco:6190},
+  {nome:"VK85 c/ motor Standard (sem CJ)", preco:5790},
+  {nome:"Conjunto de Rodas (CJ)", preco:500},
+  {nome:"VK120 c/ motor 7HP", preco:7580},
+  {nome:"VK120 c/ motor Vibromak 7HP Standard", preco:7180},
+  {nome:"CPV 350 c/ motor 15HP", preco:6392},
+  {nome:"CPV 350 c/ motor 7HP", preco:5469},
+  {nome:"CPV460 c/ motor 15HP", preco:8877},
+];
+
+// Estado global
+let nParcelas = 6;
+let custoPct = 35;
+let qtdVendas = 50;
+let horizonte = 12;
+
+// Formatação
+const fmt = v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const sum = arr => arr.reduce((a,b)=>a+b,0);
+
+// Pesos fixos (iguais)
+function pesosFixos(n){
+  return Array.from({length:n},()=>1/n);
+}
+
+// Calcula pesos decrescentes onde p1+p2 ≈ custoAlvo
+function pesosDecrescentes(n, custoAlvo){
+  // Abordagem simples: progressão aritmética decrescente
+  // onde as duas primeiras parcelas somam aproximadamente o custo alvo
+  
+  // Para uma PA decrescente: a, a-d, a-2d, ..., a-(n-1)d
+  // Soma = n*a - d*(0+1+2+...+(n-1)) = n*a - d*n*(n-1)/2
+  
+  // Queremos:
+  // 1) Soma total = 1
+  // 2) a + (a-d) ≈ custoAlvo
+  
+  // De (2): 2a - d = custoAlvo => d = 2a - custoAlvo
+  // De (1): n*a - d*n*(n-1)/2 = 1
+  //         n*a - (2a - custoAlvo)*n*(n-1)/2 = 1
+  //         n*a - n*(n-1)*a + custoAlvo*n*(n-1)/2 = 1
+  //         a*[n - n*(n-1)] = 1 - custoAlvo*n*(n-1)/2
+  //         a*[n - n*n + n] = 1 - custoAlvo*n*(n-1)/2
+  //         a*[2n - n*n] = 1 - custoAlvo*n*(n-1)/2
+  //         a*n*(2 - n) = 1 - custoAlvo*n*(n-1)/2
+  
+  const numerador = 1 - custoAlvo * n * (n-1) / 2;
+  const denominador = n * (2 - n);
+  const a = numerador / denominador;
+  const d = 2*a - custoAlvo;
+  
+  const pesos = [];
+  for(let i=0; i<n; i++){
+    const p = a - i*d;
+    // Garante valores positivos
+    pesos.push(Math.max(0.001, p));
+  }
+  
+  // Normaliza para somar exatamente 1
+  const soma = pesos.reduce((acc,val)=>acc+val,0);
+  return pesos.map(p => p/soma);
+}
+
+// Calcula em qual parcela atinge o custo acumulado
+function parcelaRecuperacao(pesos, custoAlvo){
+  let acum = 0;
+  for(let i=0; i<pesos.length; i++){
+    acum += pesos[i];
+    if(acum >= custoAlvo) return i+1;
+  }
+  return pesos.length;
+}
+
+// Fluxo de caixa mensal
+function fluxoCaixa(total, pesos, qtd){
+  const n = pesos.length;
+  const meses = horizonte;
+  const inflow = Array.from({length:meses},()=>0);
+  for(let mes=0; mes<meses; mes++){
+    for(let k=0;k<n;k++){
+      const m = mes + k;
+      if(m<meses) inflow[m] += total * pesos[k] * qtd;
+    }
+  }
+  return inflow;
+}
+
+// Renderiza tabela de parcelas com destaque na recuperação
+function renderParcelas(el, total, pesos, custoAlvo){
+  let acum = 0;
+  const rows = pesos.map((p,i)=>{
+    acum += p;
+    const valor = total * p;
+    const pct = p * 100;
+    const isRecuperacao = acum >= custoAlvo && (i===0 || acum - p < custoAlvo);
+    return {parcela:i+1, valor, pct, isRecuperacao};
+  });
+
+  let html = '<thead><tr><th>Parcela</th><th>Valor</th><th>% Total</th><th>Acum.</th></tr></thead><tbody>';
+  let acumTotal = 0;
+  rows.forEach(r=>{
+    acumTotal += r.pct;
+    const cls = r.isRecuperacao ? ' class="highlight"' : '';
+    html += `<tr${cls}>`;
+    html += `<td>${r.parcela}ª</td>`;
+    html += `<td>${fmt(r.valor)}</td>`;
+    html += `<td>${r.pct.toFixed(1)}%</td>`;
+    html += `<td>${acumTotal.toFixed(1)}%</td>`;
+    html += `</tr>`;
+  });
+  html += '</tbody>';
+  el.innerHTML = html;
+}
+
+// Renderiza tabela de fluxo
+function renderFluxo(el, serie){
+  let html = '<thead><tr><th>Mês</th><th>Entrada (R$)</th></tr></thead><tbody>';
+  serie.forEach((v,i)=>{
+    html += `<tr><td>${i+1}º</td><td>${fmt(v)}</td></tr>`;
+  });
+  html += '</tbody>';
+  el.innerHTML = html;
+}
+
+// Desenha gráfico de linhas
+function drawChart(canvas, fix, dec){
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  // Grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for(let i=0;i<=5;i++){
+    const y = H*(i/5);
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+
+  const pad = 40;
+  const maxVal = Math.max(...fix, ...dec) * 1.1;
+  
+  function toXY(i,val){
+    const x = pad + (W-2*pad) * (i/(fix.length-1));
+    const y = H - pad - (H-2*pad) * (val/maxVal);
+    return [x,y];
+  }
+
+  function drawLine(serie, color, width){
+    ctx.beginPath();
+    serie.forEach((v,i)=>{
+      const [x,y]=toXY(i,v);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.stroke();
+  }
+
+  // Labels eixo X
+  ctx.fillStyle = '#9db0ff';
+  ctx.font = '12px system-ui';
+  ctx.textAlign = 'center';
+  for(let i=0;i<fix.length;i++){
+    const [x,y]=toXY(i,0);
+    ctx.fillText((i+1)+'º', x, H-20);
+  }
+
+  // Linhas
+  drawLine(fix, '#7ea8ff', 3);
+  drawLine(dec, '#2bd98a', 3);
+}
+
+// Inicializa tabela de produtos
+function initProdutos(){
+  const tbody = document.querySelector('#tblProdutos tbody');
+  produtosBase.forEach((p,idx)=>{
+    const tr=document.createElement('tr');
+    const td1=document.createElement('td'); td1.textContent=p.nome; tr.appendChild(td1);
+    const td2=document.createElement('td'); td2.textContent=fmt(p.preco); tr.appendChild(td2);
+    const td3=document.createElement('td'); td3.style.textAlign='center';
+    const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=true; chk.dataset.idx=idx;
+    chk.addEventListener('change', refreshAll);
+    td3.appendChild(chk); tr.appendChild(td3);
+    tbody.appendChild(tr);
+  });
+}
+
+// Soma cesta selecionada
+function cestaTotal(){
+  const chks = document.querySelectorAll('#tblProdutos tbody input[type="checkbox"]');
+  let total=0;
+  chks.forEach(ch=>{ if(ch.checked){ total += produtosBase[+ch.dataset.idx].preco; }});
+  return total;
+}
+
+// Atualiza tudo
+function refreshAll(){
+  const total = cestaTotal();
+  const custo = total * (custoPct/100);
+  const custoAlvo = custoPct/100;
+
+  const pesosF = pesosFixos(nParcelas);
+  const pesosD = pesosDecrescentes(nParcelas, custoAlvo);
+
+  const recFix = parcelaRecuperacao(pesosF, custoAlvo);
+  const recDec = parcelaRecuperacao(pesosD, custoAlvo);
+
+  // KPIs
+  document.getElementById('kpiTotal').textContent = fmt(total);
+  document.getElementById('kpiCusto').textContent = fmt(custo);
+  document.getElementById('kpiRecFix').textContent = recFix + 'ª parcela';
+  document.getElementById('kpiRecDec').textContent = recDec + 'ª parcela';
+
+  // Tabelas de parcelas
+  renderParcelas(document.getElementById('tblFixas'), total, pesosF, custoAlvo);
+  renderParcelas(document.getElementById('tblDec'), total, pesosD, custoAlvo);
+
+  // Fluxo de caixa
+  const fluxoFix = fluxoCaixa(total, pesosF, qtdVendas);
+  const fluxoDec = fluxoCaixa(total, pesosD, qtdVendas);
+
+  renderFluxo(document.getElementById('tblFluxoFix'), fluxoFix);
+  renderFluxo(document.getElementById('tblFluxoDec'), fluxoDec);
+  drawChart(document.getElementById('cvChart'), fluxoFix, fluxoDec);
+
+  // Comparações
+  const sum3Fix = fluxoFix.slice(0,3).reduce((a,b)=>a+b,0);
+  const sum3Dec = fluxoDec.slice(0,3).reduce((a,b)=>a+b,0);
+  const diff3 = sum3Dec - sum3Fix;
+
+  const sum6Fix = fluxoFix.slice(0,6).reduce((a,b)=>a+b,0);
+  const sum6Dec = fluxoDec.slice(0,6).reduce((a,b)=>a+b,0);
+  const diff6 = sum6Dec - sum6Fix;
+
+  const sum12Fix = fluxoFix.reduce((a,b)=>a+b,0);
+  const sum12Dec = fluxoDec.reduce((a,b)=>a+b,0);
+
+  document.getElementById('cmp3Meses').textContent = (diff3>=0?'+':'') + fmt(diff3);
+  document.getElementById('cmp6Meses').textContent = (diff6>=0?'+':'') + fmt(diff6);
+  document.getElementById('cmp12Meses').textContent = fmt(sum12Fix) + ' (igual)';
+
+  // Pills e textos dinâmicos
+  document.getElementById('pillQty').textContent = qtdVendas;
+  document.getElementById('pillTotal').textContent = fmt(total);
+  document.getElementById('pillMonth').textContent = fmt(total * qtdVendas);
+  document.getElementById('txtCost').textContent = custoPct + '%';
+  document.getElementById('txtCost2').textContent = custoPct + '%';
+  document.getElementById('txtQty').textContent = qtdVendas;
+  document.getElementById('txtRecDiff').textContent = (recFix - recDec) + ' parcelas antes';
+  document.getElementById('txtDiff3').textContent = fmt(diff3);
+}
+
+// Tabs
+function initTabs(){
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t=>{
+    t.addEventListener('click',()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      nParcelas = +t.dataset.n;
+      refreshAll();
+    });
+  });
+}
+
+// Inputs
+function initInputs(){
+  document.getElementById('inpCost').addEventListener('input', e=>{
+    custoPct = Math.max(1, Math.min(80, +e.target.value || 35));
+    refreshAll();
+  });
+  document.getElementById('inpQty').addEventListener('input', e=>{
+    qtdVendas = Math.max(1, Math.min(200, +e.target.value || 50));
+    refreshAll();
+  });
+  document.getElementById('inpHorizon').addEventListener('input', e=>{
+    horizonte = Math.max(6, Math.min(24, +e.target.value || 12));
+    refreshAll();
+  });
+  document.getElementById('btnPrint').addEventListener('click', ()=>window.print());
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    nParcelas=6; custoPct=35; qtdVendas=50; horizonte=12;
+    document.getElementById('inpCost').value=35;
+    document.getElementById('inpQty').value=50;
+    document.getElementById('inpHorizon').value=12;
+    document.querySelectorAll('.tab').forEach((x,i)=>x.classList.toggle('active', i===0));
+    document.querySelectorAll('#tblProdutos tbody input[type=checkbox]').forEach(ch=>ch.checked=true);
+    refreshAll();
+  });
+}
+
+// Init
+initProdutos();
+initTabs();
+initInputs();
+refreshAll();
+</script>
+</body>
+</html>
+

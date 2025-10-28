@@ -128,11 +128,17 @@ export async function POST(request: NextRequest) {
         }
       })
       
+      // Converter endDate de string para Date se necessário
+      const recurrenceConfig = {
+        ...validatedData.recurrence,
+        endDate: validatedData.recurrence.endDate ? new Date(validatedData.recurrence.endDate) : undefined
+      }
+      
       // Gerar todas as instâncias da recorrência
       const instances = generateRecurrenceInstances(
         startTime,
         validatedData.duration,
-        validatedData.recurrence
+        recurrenceConfig
       )
       
       console.log(`📅 Criando ${instances.length} instâncias recorrentes`)

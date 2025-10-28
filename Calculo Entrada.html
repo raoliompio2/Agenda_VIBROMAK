@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simulador — Parcelas Fixas vs Amortizadas</title>
+<style>
+  :root{
+    --bg:#1E1E1E; 
+    --surface:#222222; 
+    --card:#252525; 
+    --ink:#ffffff; 
+    --muted:#cfcfcf; 
+    --line:#3a3a3a;
+    --accent:#F2701B; 
+    --good:#36D28B; 
+    --neutral:#9a9a9a;
+
+    --line-fixas:#F2701B;
+    --line-amort:#36D28B;
+    --line-cost:#9a9a9a;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial;
+  }
+  a{color:inherit}
+
+  .wrap{max-width:1220px; margin:auto; padding:22px 18px 48px}
+
+  /* Header visual */
+  .hero{
+    display:grid; grid-template-columns:1.2fr .8fr; gap:20px; align-items:center;
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border:1px solid #2f2f2f; border-radius:18px; padding:18px 18px 8px;
+  }
+  .brand{display:flex; align-items:center; gap:12px}
+  .brand img{height:38px; width:auto; border-radius:6px}
+  .pill{display:inline-flex; align-items:center; gap:8px; background:#141414; border:1px solid #333; border-radius:999px; padding:6px 10px; font-size:12px; color:#f0f0f0}
+  h1{font-size:clamp(26px,4vw,40px); line-height:1.08; margin:8px 0 2px}
+  .lead{color:var(--muted); font-size:clamp(14px,2.2vw,16px); margin:6px 0 14px}
+  .btnbar{display:flex; gap:8px; flex-wrap:wrap}
+  .btn{background:var(--accent); color:#1E1E1E; border:0; border-radius:12px; padding:10px 14px; font-weight:700; cursor:pointer}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid #5a5a5a}
+  .btn:hover{filter:brightness(1.08)}
+  .btn:active{transform:translateY(1px)}
+  .note{font-size:12px; color:#d9d9d9}
+
+  /* Sticky params header */
+  .sticky-panel-wrap{
+    position: sticky;
+    top: 0; /* ajuste se tiver um header global do site, ex: top: 64px; */
+    z-index: 50;
+    padding-top: 10px;
+  }
+  .sticky-panel{
+    background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    border: 1px solid #2f2f2f;
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.35);
+    backdrop-filter: blur(4px);
+  }
+  .sticky-grid{
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 10px;
+    align-items: center;
+  }
+  .sticky-col-2{ grid-column: span 2; }
+  .sticky-col-12{ grid-column: span 12; }
+  @media(max-width:980px){
+    .sticky-grid{ grid-template-columns: repeat(6, 1fr); }
+    .sticky-col-2, .sticky-col-12{ grid-column: span 6; }
+  }
+
+  .stk-field{ position: relative; }
+  .stk-field input{
+    width:100%; background:#121212; border:1px solid var(--line); color:var(--ink);
+    padding:12px 10px 8px; border-radius:10px; outline:none; font-size:13px;
+  }
+  .stk-field input:focus{ border-color: var(--accent); box-shadow:0 0 0 3px rgba(242,112,27,.15); }
+  .stk-field label{
+    position:absolute; left:8px; top:8px; font-size:10px; color:#dcdcdc; background:#121212; padding:0 6px;
+    transform:translateY(-50%); border-radius:5px;
+  }
+
+  .sticky-tabs{ display:flex; gap:6px; flex-wrap:wrap }
+  .sticky-tabs .tab{ padding:6px 10px; border-radius:9px; border:1px solid var(--line); background:#141414; cursor:pointer; font-size:12px }
+  .sticky-tabs .tab.active{ background:var(--accent); color:#1e1e1e; border-color:transparent; font-weight:800 }
+
+  /* Cards e tabelas */
+  .card{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+    border:1px solid #2f2f2f; border-radius:16px; padding:16px; box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+  .table{width:100%; border-collapse:separate; border-spacing:0; font-size:13px}
+  .table thead th{
+    position:sticky; top:0; background:#1b1b1b; z-index:1;
+    border-bottom:1px solid #383838; padding:10px 8px; text-align:right
+  }
+  .table thead th:first-child{text-align:left}
+  .table tbody td{border-bottom:1px dashed #3b3b3b; padding:10px 8px; text-align:right}
+  .table tbody td:first-child{text-align:left}
+  .table tbody tr:nth-child(odd){background:rgba(255,255,255,.015)}
+  .tag{display:inline-flex; align-items:center; gap:8px; padding:4px 8px; border-radius:10px; background:#171717; border:1px solid #3a3a3a; color:#f0f0f0; font-size:12px}
+
+  /* Chart */
+  .chart{height:300px; position:relative; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0)); border:1px solid #2f2f2f; border-radius:14px; overflow:hidden}
+  .chart canvas{width:100%; height:100%}
+  #legendHost{display:flex; flex-wrap:wrap; gap:10px}
+
+  .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+  .kpi .box{background:#161616; border:1px solid #333; border-radius:14px; padding:12px}
+  .kpi .t{font-size:12px; color:#eaeaea}
+  .kpi .v{font-size:18px; font-weight:800}
+
+  @media(max-width:980px){
+    .hero{grid-template-columns:1fr}
+    .kpi{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Cabeçalho visual -->
+    <section class="hero">
+      <div>
+        <div class="brand">
+          <img src="https://vibromak.com.br/wp-content/uploads/2024/05/cropped-Design-sem-nome.webp" alt="Vibromak Logo" />
+          <span class="pill">Simulador de Parcelas</span>
+        </div>
+        <h1>Parcelas Fixas vs <span style="color:var(--good)">Amortizadas (Decrescentes)</span></h1>
+        <p class="lead">Simula vendas mensais da mesma cesta; compara formação das parcelas, fluxo de caixa e resultado líquido vs custo operacional.</p>
+        <div class="btnbar">
+          <button class="btn" id="btnPrint">Exportar em PDF</button>
+          <button class="btn ghost" id="btnReset">Restaurar padrões</button>
+          <span class="pill">Meta: recuperar <strong id="pillCost">35%</strong> até a 2ª parcela</span>
+        </div>
+      </div>
+      <div class="note">
+        Ajuste os parâmetros no painel fixo abaixo. Tudo atualiza em tempo real enquanto você rola a página.
+      </div>
+    </section>
+
+    <!-- Painel STICKY de parâmetros -->
+    <div class="sticky-panel-wrap" id="stickyTop">
+      <div class="sticky-panel">
+        <div class="sticky-grid">
+          <div class="sticky-col-2">
+            <div class="stk-field">
+              <input type="number" id="inpCost" value="35" min="1" max="95" step="0.5" aria-label="Custo percentual"/>
+              <label>Custo (% do preço)</label>
+            </div>
+          </div>
+          <div class="sticky-col-2">
+            <div class="stk-field">
+              <input type="number" id="inpHorizon" value="12" min="6" max="36" step="1" aria-label="Horizonte em meses"/>
+              <label>Horizonte (meses p/ fluxo)</label>
+            </div>
+          </div>
+          <div class="sticky-col-2">
+            <div class="stk-field">
+              <input type="number" id="inpEntrada" value="0" min="0" step="50" aria-label="Entrada por venda"/>
+              <label>Entrada à vista (R$) por venda</label>
+            </div>
+          </div>
+          <div class="sticky-col-2">
+            <div class="stk-field">
+              <input type="number" id="inpQty" value="1" min="0" step="1" aria-label="Quantidade por mês"/>
+              <label>Quantidade vendida por mês</label>
+            </div>
+          </div>
+          <div class="sticky-col-2">
+            <div class="stk-field">
+              <input type="number" id="inpCustoOper" value="0" min="0" step="100" aria-label="Custo operacional mensal"/>
+              <label>Custo de operação mensal (R$)</label>
+            </div>
+          </div>
+          <div class="sticky-col-12">
+            <div class="sticky-tabs" id="tabN">
+              <div class="tab active" data-n="6">6x</div>
+              <div class="tab" data-n="8">8x</div>
+              <div class="tab" data-n="10">10x</div>
+              <div class="tab" data-n="12">12x (cartão)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portfólio -->
+    <section class="card" style="margin-top:16px">
+      <h2>Portfólio usado nas simulações</h2>
+      <table class="table" id="tblProdutos">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Preço (R$)</th>
+            <th>Incluir</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="note">Selecione os itens da cesta unitária. A simulação multiplica pelo campo “Quantidade vendida por mês”.</div>
+    </section>
+
+    <!-- Parcelamento -->
+    <section class="card" style="margin-top:16px">
+      <h2>Formação das parcelas – <span id="titleN">6x</span></h2>
+      <div class="tag" style="margin-bottom:8px">
+        A entrada abate o custo-alvo primeiro. As 2 primeiras parcelas da amortizada são calibradas para recuperar o custo restante. 
+        Considera vender a mesma cesta todo mês (multiplicada pela quantidade informada). Total sem juros (redistribuição).
+      </div>
+      <div class="grid" style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+        <div>
+          <div class="tag">Parcelas Fixas (iguais)</div>
+          <table class="table" id="tblFixas"></table>
+        </div>
+        <div>
+          <div class="tag">Parcelas Amortizadas (decrescentes)</div>
+          <table class="table" id="tblDec"></table>
+        </div>
+      </div>
+      <div class="kpi" id="kpis" style="margin-top:12px"></div>
+    </section>
+
+    <!-- Fluxo e Gráfico -->
+    <section class="card" style="margin-top:16px">
+      <h2>Fluxo, Custo Operacional e Resultado líquido</h2>
+      <div class="chart">
+        <canvas id="cvChart" width="1100" height="300"></canvas>
+      </div>
+      <div id="legendHost" style="margin:10px 0 6px"></div>
+
+      <div class="grid" style="margin-top:6px; display:grid; grid-template-columns:1fr 1fr; gap:14px">
+        <div>
+          <div class="tag">Fixas — Fluxo vs Custo vs Resultado</div>
+          <table class="table" id="tblFluxoFix"></table>
+        </div>
+        <div>
+          <div class="tag">Amortizadas — Fluxo vs Custo vs Resultado</div>
+          <table class="table" id="tblFluxoDec"></table>
+        </div>
+        <div style="grid-column:1 / -1">
+          <div class="tag">Acumulado do Resultado (payback / rombo)</div>
+          <table class="table" id="tblAcumulado"></table>
+        </div>
+      </div>
+    </section>
+
+    <footer class="note" style="margin:16px 0 40px">Material interno para simulação e planejamento. Valores podem mudar conforme política comercial.</footer>
+  </div>
+
+<script>
+// ===== Dados =====
+const produtosBase = [
+  {nome:"MOTOR COMPACTADOR RM120 (c/ embreagem)", preco:1890},
+  {nome:"MOTOR AVULSO RM120", preco:1690},
+  {nome:"EMBREAGEM EIXO CHAVETADO", preco:392},
+  {nome:"EMBREAGEM (5+ unidades)", preco:349},
+  {nome:"MOTOR VIBROMAK 7HP", preco:1505},
+  {nome:"MOTOR VIBROMAK 15HP", preco:2996.32},
+  {nome:"VK85 c/ motor Vibromak 7HP (sem CJ)", preco:6190},
+  {nome:"VK85 c/ motor Standard (sem CJ)", preco:5790},
+  {nome:"Conjunto de Rodas (CJ)", preco:500},
+  {nome:"VK120 c/ motor 7HP", preco:7580},
+  {nome:"VK120 c/ motor Vibromak 7HP Standard", preco:7180},
+  {nome:"CPV 350 c/ motor 15HP", preco:6392},
+  {nome:"CPV 350 c/ motor 7HP", preco:5469},
+  {nome:"CPV460 c/ motor 15HP", preco:8877},
+];
+
+// ===== Estado =====
+let nParcelas = 6;
+let custoPct = 35;
+let horizonte = 12;
+let custoOper = 0;
+let qtyMes = 1;
+
+// ===== Utils =====
+const formatBRL = v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const round2 = v => Math.round(v*100)/100;
+
+// Pesos fixos
+const pesosFixos = n => Array.from({length:n},()=>1/n);
+
+// Resolve q para que w0+w1 = f (fração) em PG normalizada
+function solveQ(n, f){
+  let lo=1e-4, hi=0.999, mid;
+  function frac2(q){
+    const q2=q*q, qn=Math.pow(q,n); const den=Math.max(1e-12,1-qn);
+    return (1-q2)/den;
+  }
+  for(let i=0;i<80;i++){
+    mid=(lo+hi)/2;
+    if(frac2(mid) > f) lo=mid; else hi=mid;
+  }
+  return (lo+hi)/2;
+}
+function pesosGeometricos(n, frac2Alvo){
+  const f = Math.min(1, Math.max(1e-6, frac2Alvo));
+  const q = solveQ(n, f);
+  const qn = Math.pow(q, n);
+  const den = Math.max(1e-12, 1 - qn);
+  const a = (1 - q) / den;
+  return {q, pesos:Array.from({length:n},(_,i)=> a*Math.pow(q,i))};
+}
+
+function tabelaParcelas(total, pesos){
+  return pesos.map((w,i)=>({parcela:i+1, valor:round2(total*w), pct:w}));
+}
+
+// Render table
+function renderTable(el, rows, headers){
+  el.innerHTML='';
+  const thead=document.createElement('thead');
+  const trh=document.createElement('tr');
+  headers.forEach(h=>{ const th=document.createElement('th'); th.textContent=h; trh.appendChild(th); });
+  thead.appendChild(trh); el.appendChild(thead);
+  const tbody=document.createElement('tbody');
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    headers.forEach(h=>{
+      const td=document.createElement('td');
+      if(h==='Parcela' || h==='Mês'){ td.textContent=r.parcela ?? r.Mês ?? ''; }
+      else if(/\(R\$\)/.test(h)){
+        const val = r[h] ?? r.valor ?? 0; td.textContent = formatBRL(round2(+val||0));
+      }else if(h==='% do total'){ td.textContent = (((r.pct||0)*100).toFixed(2))+'%'; }
+      else td.textContent = r[h] ?? '';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  el.appendChild(tbody);
+}
+
+// Fluxo (venda mensal recorrente)
+function fluxoRecebimentos(total, pesos){
+  const n=pesos.length, m=horizonte;
+  const inflow=Array.from({length:m},()=>0);
+  for(let mes=0; mes<m; mes++){
+    for(let k=0;k<n;k++){
+      const t=mes+k; if(t<m) inflow[t]+= total*pesos[k];
+    }
+  }
+  return inflow.map(round2);
+}
+const serieCustoOper = (m, c) => Array.from({length:m},()=>round2(c));
+const serieResultado = (inflow, custo, entradaMes) => inflow.map((v,i)=> round2(v - custo + (i===0?entradaMes:0)));
+function acumulado(serie){ const out=[]; let acc=0; for(const v of serie){ acc=round2(acc+v); out.push(acc);} return out; }
+function primeiroMesLucro(acc){ for(let i=0;i<acc.length;i++) if(acc[i]>=0) return i+1; return null; }
+
+// ===== Gráfico com legenda/tooltip =====
+const SERIES = [
+  {key:'fixIn',   label:'Recebimentos Fixas',       color:getVar('--line-fixas'), dash:[],     visible:true},
+  {key:'decIn',   label:'Recebimentos Amortizadas', color:getVar('--line-amort'), dash:[],     visible:true},
+  {key:'cost',    label:'Custo Operacional',        color:getVar('--line-cost'),  dash:[],     visible:true},
+  {key:'fixNet',  label:'Resultado líquido Fixas',  color:getVar('--line-fixas'), dash:[6,6],  visible:true},
+  {key:'decNet',  label:'Resultado líquido Amort.', color:getVar('--line-amort'), dash:[6,6],  visible:true},
+];
+function getVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function renderLegend(container, series, onToggle){
+  container.innerHTML='';
+  series.forEach((s,idx)=>{
+    const b=document.createElement('button');
+    b.style.display='inline-flex'; b.style.alignItems='center'; b.style.gap='8px';
+    b.style.padding='6px 10px'; b.style.borderRadius='10px'; b.style.border='1px solid var(--line)';
+    b.style.background='#141414'; b.style.color='#f0f0f0'; b.style.cursor='pointer'; b.style.fontSize='12px';
+    const dot=document.createElement('span');
+    dot.style.width='12px'; dot.style.height='12px'; dot.style.borderRadius='50%'; dot.style.background=s.color;
+    dot.style.boxShadow = s.visible ? '0 0 0 2px rgba(255,255,255,.08) inset' : '0 0 0 2px rgba(255,255,255,.25) inset';
+    const t=document.createElement('span'); t.textContent=s.label+(s.visible?'':' (off)');
+    b.appendChild(dot); b.appendChild(t);
+    b.addEventListener('click', ()=>onToggle(idx));
+    container.appendChild(b);
+  });
+}
+
+function drawChart(canvas, fixInflow, decInflow, custo, fixNet, decNet){
+  const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height, pad=32;
+  const m=fixInflow.length, costLine=Array.from({length:m},()=>custo);
+  const data={fixIn:fixInflow, decIn:decInflow, cost:costLine, fixNet, decNet};
+
+  function xScale(i){ return pad + (W-2*pad)*(i/((m-1)||1)); }
+  function yScale(v, min, max){ const t=(v-min)/((max-min)||1); return H - pad - (H-2*pad)*t; }
+
+  let activeTip=null;
+  function render(){
+    const all=SERIES.filter(s=>s.visible).flatMap(s=>data[s.key]);
+    const maxV=Math.max(1, ...all), minV=Math.min(0, ...all);
+
+    ctx.clearRect(0,0,W,H);
+    // grid
+    ctx.fillStyle='rgba(255,255,255,0.08)';
+    for(let i=0;i<6;i++){ const y=pad+(H-2*pad)*(i/5); ctx.fillRect(0,Math.round(y),W,1); }
+    // zero
+    ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.fillRect(0, Math.round(yScale(0,minV,maxV)), W, 1);
+
+    SERIES.forEach(s=>{
+      if(!s.visible) return;
+      const arr=data[s.key];
+      ctx.beginPath();
+      arr.forEach((v,i)=>{ const x=xScale(i), y=yScale(v,minV,maxV); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+      ctx.setLineDash(s.dash); ctx.strokeStyle=s.color; ctx.lineWidth=2.2; ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=s.color;
+      arr.forEach((v,i)=>{ const x=xScale(i), y=yScale(v,minV,maxV); ctx.beginPath(); ctx.arc(x,y,2.5,0,Math.PI*2); ctx.fill(); });
+    });
+
+    ctx.fillStyle='#e6e6e6'; ctx.font='12px system-ui';
+    for(let i=0;i<m;i++){ const x=xScale(i); ctx.fillText(String(i+1).padStart(2,'0'), x-6, H-6); }
+
+    if(activeTip) drawTooltip(activeTip, minV, maxV);
+  }
+  function drawTooltip(tip, minV, maxV){
+    const {mx,my, idx} = tip;
+    const items = SERIES.filter(s=>s.visible).map(s=>({label:s.label, color:s.color, value:data[s.key][idx]}));
+    const lines = ['Mês '+(idx+1)].concat(items.map(it=>`${it.label}: ${formatBRL(round2(it.value))}`));
+    ctx.font='12px system-ui';
+    const padB=8, lh=16;
+    const width = Math.max(...lines.map(s=>ctx.measureText(s).width)) + padB*2;
+    const height = lh*lines.length + padB*2;
+    let x=mx+14, y=my-height-10; if(x+width>W-6) x=mx-width-14; if(y<6) y=my+12;
+    ctx.fillStyle='rgba(20,20,20,.95)'; ctx.fillRect(x,y,width,height);
+    ctx.strokeStyle='#3a3a3a'; ctx.strokeRect(x,y,width,height);
+    ctx.fillStyle='#f0f0f0';
+    lines.forEach((t,i)=>ctx.fillText(t, x+padB, y+padB+lh*(i+0.7)));
+
+    // guia vertical
+    const xx = pad + (W-2*pad)*(idx/((m-1)||1)); ctx.fillStyle='rgba(255,255,255,.15)'; ctx.fillRect(xx, 0, 1, H);
+  }
+
+  canvas.onmousemove = e=>{
+    const r=canvas.getBoundingClientRect(); const mx=e.clientX-r.left, my=e.clientY-r.top;
+    let bi=0,bd=Infinity; for(let i=0;i<m;i++){ const dx=Math.abs(mx - (pad + (canvas.width-2*pad)*(i/((m-1)||1)))); if(dx<bd){bd=dx; bi=i;} }
+    activeTip={mx,my,idx:bi}; render();
+  };
+  canvas.onmouseleave = ()=>{ activeTip=null; render(); };
+
+  renderLegend(document.getElementById('legendHost'), SERIES, (i)=>{ SERIES[i].visible=!SERIES[i].visible; render(); });
+
+  render();
+}
+
+// ===== Produtos UI =====
+function initProdutos(){
+  const tbody=document.querySelector('#tblProdutos tbody'); tbody.innerHTML='';
+  produtosBase.forEach((p,i)=>{
+    const tr=document.createElement('tr');
+    const td1=document.createElement('td'); td1.textContent=p.nome; tr.appendChild(td1);
+    const td2=document.createElement('td'); td2.textContent=formatBRL(p.preco); tr.appendChild(td2);
+    const td3=document.createElement('td'); td3.style.textAlign='center';
+    const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=true; chk.dataset.idx=i;
+    chk.addEventListener('change', ()=>{ refreshAll(); savePrefs(); });
+    td3.appendChild(chk); tr.appendChild(td3); tbody.appendChild(tr);
+  });
+}
+function cestaUnitTotal(){
+  const chks = document.querySelectorAll('#tblProdutos tbody input[type=checkbox]');
+  let t=0; chks.forEach(ch=>{ if(ch.checked) t+= produtosBase[+ch.dataset.idx].preco; });
+  return round2(t);
+}
+
+// ===== KPIs =====
+function renderKPIs(totalMes, totalUnit, pesosFix, pesosDec, entradaMes, entradaUnit, custoAlvoPct, custoOper, netFix, netDec){
+  const k = document.getElementById('kpis');
+  const p1p2Dec = (pesosDec[0]+pesosDec[1])*100;
+  const custoAlvoUnit = round2(totalUnit * (custoAlvoPct/100));
+  const custoRestanteUnit = round2(Math.max(0, custoAlvoUnit - entradaUnit));
+
+  const fixAcc = acumulado(netFix);
+  const decAcc = acumulado(netDec);
+  const fixPay = primeiroMesLucro(fixAcc);
+  const decPay = primeiroMesLucro(decAcc);
+
+  const fixMinAcc = Math.min(...fixAcc);
+  const decMinAcc = Math.min(...decAcc);
+  const modeloMaisRombo = fixMinAcc < decMinAcc ? 'Fixas' : (decMinAcc < fixMinAcc ? 'Amortizadas' : 'Empate');
+
+  const items = [
+    {t:'Quantidade vendida/mês', v:`${qtyMes} unid.`},
+    {t:'Cesta (unitária)', v: formatBRL(totalUnit)},
+    {t:'Entrada (por venda)', v: formatBRL(entradaUnit)},
+    {t:'Cesta total no mês', v: formatBRL(totalMes)},
+    {t:'Entrada total/mês', v: formatBRL(entradaMes)},
+    {t:'Custo-alvo unitário', v: `${custoAlvoPct}% (${formatBRL(custoAlvoUnit)})`},
+    {t:'Custo restante após entrada (unit.)', v: formatBRL(custoRestanteUnit)},
+    {t:'Soma 1ª+2ª (amortizadas) do total', v: p1p2Dec.toFixed(2)+'%'},
+    {t:'Custo operacional mensal', v: formatBRL(custoOper)},
+    {t:'Payback (Fixas)', v: fixPay ? `Mês ${fixPay}` : 'Não atinge'},
+    {t:'Payback (Amortizadas)', v: decPay ? `Mês ${decPay}` : 'Não atinge'},
+    {t:'Déficit mais profundo', v: modeloMaisRombo}
+  ];
+
+  k.innerHTML='';
+  items.forEach(it=>{
+    const box=document.createElement('div'); box.className='box';
+    const t=document.createElement('div'); t.className='t'; t.textContent=it.t;
+    const v=document.createElement('div'); v.className='v'; v.textContent=it.v;
+    box.appendChild(t); box.appendChild(v); k.appendChild(box);
+  });
+}
+
+// ===== Persistência =====
+function loadPrefs(){
+  try{
+    const s=JSON.parse(localStorage.getItem('simulPrefs')||'{}');
+    if(s.nParcelas) nParcelas=s.nParcelas;
+    if(s.custoPct!=null) custoPct=s.custoPct;
+    if(s.horizonte) horizonte=s.horizonte;
+    if(s.custoOper!=null){ custoOper=s.custoOper; document.getElementById('inpCustoOper').value=custoOper; }
+    if(s.entradaUnit!=null) document.getElementById('inpEntrada').value=s.entradaUnit;
+    if(s.qtyMes!=null){ qtyMes=s.qtyMes; document.getElementById('inpQty').value=qtyMes; }
+    document.querySelectorAll('#tabN .tab').forEach(el=>el.classList.toggle('active', +el.dataset.n===nParcelas));
+  }catch(e){}
+}
+function savePrefs(){
+  const prefs={
+    nParcelas,
+    custoPct,
+    horizonte,
+    custoOper: Math.max(0, +document.getElementById('inpCustoOper').value||0),
+    entradaUnit: Math.max(0, +document.getElementById('inpEntrada').value||0),
+    qtyMes: Math.max(0, +document.getElementById('inpQty').value||0),
+  };
+  localStorage.setItem('simulPrefs', JSON.stringify(prefs));
+}
+
+// ===== Refresh principal =====
+function refreshAll(){
+  document.getElementById('titleN').textContent = nParcelas+'x';
+  document.getElementById('pillCost').textContent = custoPct+'%';
+
+  const totalUnit = cestaUnitTotal();
+  const entradaUnit = Math.max(0, +document.getElementById('inpEntrada').value || 0);
+  const qty = Math.max(0, +document.getElementById('inpQty').value || 0);
+  qtyMes = qty;
+
+  // Totais por mês (escala)
+  const totalMes = round2(totalUnit * qtyMes);
+  const entradaMes = round2(entradaUnit * qtyMes);
+
+  // Custos
+  const custoAlvoUnit = round2(totalUnit * (custoPct/100));
+  const custoRestanteUnit = round2(Math.max(0, custoAlvoUnit - entradaUnit));
+
+  // Fração alvo p/ 1ª+2ª da amortizada (sobre o total unitário)
+  const frac2Alvo = totalUnit>0 ? Math.min(1, Math.max(0, custoRestanteUnit / totalUnit)) : 0;
+
+  // Pesos
+  const pesosF = pesosFixos(nParcelas);
+  const geo = frac2Alvo>0 ? pesosGeometricos(nParcelas, frac2Alvo) : {q:0.999, pesos:pesosFixos(nParcelas)};
+  const pesosD = geo.pesos;
+
+  // Tabelas Parcelas (valores unitários)
+  const tblFix = tabelaParcelas(totalUnit, pesosF);
+  const tblDec = tabelaParcelas(totalUnit, pesosD);
+  renderTable(document.getElementById('tblFixas'), tblFix, ['Parcela','Valor (R$)','% do total']);
+  renderTable(document.getElementById('tblDec'), tblDec, ['Parcela','Valor (R$)','% do total']);
+
+  // Fluxos (mês) com quantidade
+  const inflowFixUnit = fluxoRecebimentos(totalUnit, pesosF);
+  const inflowDecUnit = fluxoRecebimentos(totalUnit, pesosD);
+  const inflowFix = inflowFixUnit.map(v=>round2(v*qtyMes));
+  const inflowDec = inflowDecUnit.map(v=>round2(v*qtyMes));
+
+  // Resultado líquido (entrada escala)
+  const netFix = serieResultado(inflowFix, custoOper, entradaMes);
+  const netDec = serieResultado(inflowDec, custoOper, entradaMes);
+
+  // Tabelas de fluxo
+  const meses=horizonte; const custoSerie = serieCustoOper(meses, custoOper);
+  const rowsFix = inflowFix.map((rec,i)=>({
+    Parcela:i+1,
+    'Recebimentos (R$)': round2(rec + (i===0?entradaMes:0)),
+    'Custo (R$)': custoSerie[i],
+    'Resultado (R$)': netFix[i]
+  }));
+  const rowsDec = inflowDec.map((rec,i)=>({
+    Parcela:i+1,
+    'Recebimentos (R$)': round2(rec + (i===0?entradaMes:0)),
+    'Custo (R$)': custoSerie[i],
+    'Resultado (R$)': netDec[i]
+  }));
+  renderTable(document.getElementById('tblFluxoFix'), rowsFix, ['Parcela','Recebimentos (R$)','Custo (R$)','Resultado (R$)']);
+  renderTable(document.getElementById('tblFluxoDec'), rowsDec, ['Parcela','Recebimentos (R$)','Custo (R$)','Resultado (R$)']);
+
+  // Acumulado
+  const accFix = acumulado(netFix);
+  const accDec = acumulado(netDec);
+  const rowsAcc = accFix.map((v,i)=>({'Mês':i+1, 'Acumulado Fixas (R$)':v, 'Acumulado Amortizadas (R$)':accDec[i]}));
+  renderTable(document.getElementById('tblAcumulado'), rowsAcc, ['Mês','Acumulado Fixas (R$)','Acumulado Amortizadas (R$)']);
+
+  // Chart
+  drawChart(
+    document.getElementById('cvChart'),
+    inflowFix.map((v,i)=>round2(v + (i===0?entradaMes:0))),
+    inflowDec.map((v,i)=>round2(v + (i===0?entradaMes:0))),
+    custoOper,
+    netFix,
+    netDec
+  );
+
+  // KPIs
+  renderKPIs(totalMes, totalUnit, pesosF, pesosD, entradaMes, entradaUnit, custoPct, custoOper, netFix, netDec);
+
+  savePrefs();
+}
+
+// ===== Interações =====
+function initTabs(){
+  const tabs=document.querySelectorAll('#tabN .tab');
+  tabs.forEach(t=>{
+    t.addEventListener('click',()=>{
+      tabs.forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      nParcelas=+t.dataset.n;
+      refreshAll();
+    });
+  });
+}
+function initInputs(){
+  const iCost=document.getElementById('inpCost');
+  const iHor=document.getElementById('inpHorizon');
+  const iEnt=document.getElementById('inpEntrada');
+  const iCOp=document.getElementById('inpCustoOper');
+  const iQty=document.getElementById('inpQty');
+
+  iCost.addEventListener('input', ()=>{custoPct=Math.max(1, Math.min(95, +iCost.value||35)); refreshAll();});
+  iHor.addEventListener('input', ()=>{horizonte=Math.max(6, Math.min(36, +iHor.value||12)); refreshAll();});
+  iEnt.addEventListener('input', ()=>{refreshAll();});
+  iCOp.addEventListener('input', ()=>{custoOper=Math.max(0, +iCOp.value||0); refreshAll();});
+  iQty.addEventListener('input', ()=>{qtyMes=Math.max(0, +iQty.value||0); refreshAll();});
+
+  document.getElementById('btnPrint').addEventListener('click', ()=>window.print());
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    nParcelas=6; custoPct=35; horizonte=12; custoOper=0; qtyMes=1;
+    document.getElementById('inpCost').value=35;
+    document.getElementById('inpHorizon').value=12;
+    document.getElementById('inpEntrada').value=0;
+    document.getElementById('inpCustoOper').value=0;
+    document.getElementById('inpQty').value=1;
+    document.querySelectorAll('#tabN .tab').forEach((x,i)=>x.classList.toggle('active', i===0));
+    document.querySelectorAll('#tblProdutos tbody input[type=checkbox]').forEach(ch=>ch.checked=true);
+    refreshAll();
+  });
+}
+
+// Efeito de sombra quando o sticky cola
+(function(){
+  const wrap=document.getElementById('stickyTop');
+  if(!wrap) return;
+  let stuck=false;
+  const onScroll=()=>{
+    const y=wrap.getBoundingClientRect().top;
+    const panel=wrap.querySelector('.sticky-panel');
+    const shouldStick = y<=0;
+    if(shouldStick!==stuck){
+      stuck=shouldStick;
+      panel.style.boxShadow = stuck ? '0 10px 24px rgba(0,0,0,.5)' : '0 6px 18px rgba(0,0,0,.35)';
+    }
+  };
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+
+// ===== Boot =====
+function boot(){
+  initProdutos();
+  initTabs();
+  initInputs();
+  loadPrefs();
+  refreshAll();
+}
+boot();
+</script>
+</body>
+</html>

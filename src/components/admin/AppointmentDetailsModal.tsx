@@ -19,7 +19,7 @@ import {
   Presentation,
   Lock,
   Plane,
-  Handshake
+  UsersRound
 } from 'lucide-react'
 import { formatDateTime, formatTime } from '@/lib/utils'
 
@@ -61,7 +61,7 @@ const statusLabels = {
 }
 
 const typeIcons = {
-  MEETING: Handshake,
+  MEETING: UsersRound,
   CALL: Video,
   PRESENTATION: Presentation,
   PARTICULAR: Lock,
