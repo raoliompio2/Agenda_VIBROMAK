@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
   Calendar, Clock, User, Building, AlertCircle, CheckCircle,
-  Handshake, Video, Presentation, Lock, Plane, FileText, Lightbulb
+  Users, Video, Presentation, Lock, Plane, FileText, Lightbulb
 } from 'lucide-react'
 import { formatTime, formatTimeRange } from '@/lib/utils'
 
@@ -41,7 +41,7 @@ const statusLabels = {
 }
 
 const typeIcons = {
-  MEETING: Handshake,
+  MEETING: Users,
   CALL: Video,
   PRESENTATION: Presentation,
   PARTICULAR: Lock,
