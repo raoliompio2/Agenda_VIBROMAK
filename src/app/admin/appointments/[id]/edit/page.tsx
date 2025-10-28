@@ -10,9 +10,19 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CalendarPicker } from '@/components/calendar/CalendarPicker'
-import { TimeSlotPicker } from '@/components/calendar/TimeSlotPicker'
+import { RangeTimeSlotPicker } from '@/components/calendar/RangeTimeSlotPicker'
 import { useToast } from '@/components/ui/alert-toast'
-import { ArrowLeft, Save, AlertTriangle } from 'lucide-react'
+import { 
+  ArrowLeft, 
+  Save, 
+  AlertTriangle,
+  UserCheck,
+  Video,
+  Presentation,
+  Lock,
+  Plane,
+  FileText
+} from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 
 interface Appointment {
@@ -50,6 +60,7 @@ export default function EditAppointmentPage() {
     location: '',
     selectedDate: new Date(),
     selectedTime: new Date(),
+    selectedTimeEnd: undefined as Date | undefined,
     duration: 60
   })
 
@@ -90,6 +101,7 @@ export default function EditAppointmentPage() {
         location: apt.location || '',
         selectedDate: apt.startTime,
         selectedTime: apt.startTime,
+        selectedTimeEnd: apt.endTime,
         duration: apt.duration
       })
       
@@ -309,16 +321,46 @@ export default function EditAppointmentPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MEETING">🤝 Reunião Presencial</SelectItem>
-                      <SelectItem value="CALL">📞 Ligação/Videochamada</SelectItem>
-                      <SelectItem value="PRESENTATION">📊 Apresentação</SelectItem>
+                      <SelectItem value="MEETING">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4" />
+                          Reunião Presencial
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="CALL">
+                        <div className="flex items-center gap-2">
+                          <Video className="h-4 w-4" />
+                          Ligação/Videochamada
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="PRESENTATION">
+                        <div className="flex items-center gap-2">
+                          <Presentation className="h-4 w-4" />
+                          Apresentação
+                        </div>
+                      </SelectItem>
                       {(session?.user?.role === 'ADMIN' || session?.user?.role === 'SECRETARY') && (
                         <>
-                          <SelectItem value="PARTICULAR">🔒 Compromisso Particular</SelectItem>
-                          <SelectItem value="VIAGEM">✈️ Viagem</SelectItem>
+                          <SelectItem value="PARTICULAR">
+                            <div className="flex items-center gap-2">
+                              <Lock className="h-4 w-4" />
+                              Compromisso Particular
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="VIAGEM">
+                            <div className="flex items-center gap-2">
+                              <Plane className="h-4 w-4" />
+                              Viagem
+                            </div>
+                          </SelectItem>
                         </>
                       )}
-                      <SelectItem value="OTHER">📝 Outro</SelectItem>
+                      <SelectItem value="OTHER">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Outro
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -421,13 +463,23 @@ export default function EditAppointmentPage() {
                   <CardTitle>Horário</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <TimeSlotPicker
+                  <RangeTimeSlotPicker
                     selectedDate={formData.selectedDate}
-                    selectedTime={formData.selectedTime}
-                    onTimeSelect={(time) => updateFormData('selectedTime', time)}
+                    selectedTimeRange={formData.selectedTime && formData.selectedTimeEnd ? {
+                      start: formData.selectedTime,
+                      end: formData.selectedTimeEnd
+                    } : undefined}
+                    onTimeRangeSelect={(start, end) => {
+                      updateFormData('selectedTime', start)
+                      updateFormData('selectedTimeEnd', end)
+                      // Atualizar duração baseado no range selecionado
+                      const durationMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60))
+                      updateFormData('duration', durationMinutes)
+                    }}
                     workingHoursStart="09:00"
                     workingHoursEnd="18:00"
-                    meetingDuration={formData.duration}
+                    meetingDuration={60}
+                    bufferTime={0}
                     existingAppointments={[]} // Will be handled by conflict check
                   />
                 </CardContent>

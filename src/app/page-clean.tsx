@@ -108,7 +108,7 @@ export default function PublicAgendaPage() {
       time: startTime.toISOString(),
       duration: duration.toString()
     })
-    window.location.href = `/agendar?${params.toString()}`
+    window.location.href = `/?${params.toString()}`
   }
 
   const workingDays = settings?.workingDays ? 

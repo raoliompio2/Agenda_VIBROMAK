@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Clock, Calendar, Plus, ArrowRight, Info } from 'lucide-react'
+import { Clock, Calendar, Plus, ArrowRight, Info, Lightbulb, CheckCircle } from 'lucide-react'
 import { formatTime, formatDuration } from '@/lib/utils'
 
 interface TimeSlot {
@@ -82,31 +82,36 @@ export function FlexibleTimeSlots({
     if (!timeSlots[clickedIndex]?.available || disabled) return
 
     if (selectedSlots.length === 0) {
-      // Primeira seleção - inicia a seleção
+      // Primeira seleção - define o INÍCIO
       setSelectedSlots([clickedIndex])
-    } else {
-      const minSelected = Math.min(...selectedSlots)
-      const maxSelected = Math.max(...selectedSlots)
+    } else if (selectedSlots.length === 1) {
+      // Segunda seleção - define o FIM e seleciona TUDO NO MEIO
+      const startIndex = selectedSlots[0]
+      const endIndex = clickedIndex
       
-      if (clickedIndex === minSelected - 1) {
-        // Expandir para trás
-        setSelectedSlots([clickedIndex, ...selectedSlots])
-      } else if (clickedIndex === maxSelected + 1) {
-        // Expandir para frente
-        setSelectedSlots([...selectedSlots, clickedIndex])
-      } else if (selectedSlots.includes(clickedIndex)) {
-        // Remover do final se for o último ou primeiro
-        if (clickedIndex === minSelected && selectedSlots.length > 1) {
-          setSelectedSlots(selectedSlots.filter(i => i !== clickedIndex))
-        } else if (clickedIndex === maxSelected && selectedSlots.length > 1) {
-          setSelectedSlots(selectedSlots.filter(i => i !== clickedIndex))
-        } else if (selectedSlots.length === 1) {
-          setSelectedSlots([])
-        }
-      } else {
-        // Nova seleção - resetar
-        setSelectedSlots([clickedIndex])
+      const minIndex = Math.min(startIndex, endIndex)
+      const maxIndex = Math.max(startIndex, endIndex)
+      
+      // Verificar se todos os slots no range estão disponíveis
+      const allAvailable = timeSlots
+        .slice(minIndex, maxIndex + 1)
+        .every(slot => slot.available)
+      
+      if (!allAvailable) {
+        alert('Alguns horários no intervalo selecionado não estão disponíveis. Por favor, selecione outro intervalo.')
+        setSelectedSlots([])
+        return
       }
+      
+      // Selecionar TODOS os slots entre o início e o fim
+      const range = []
+      for (let i = minIndex; i <= maxIndex; i++) {
+        range.push(i)
+      }
+      setSelectedSlots(range)
+    } else {
+      // Já tem uma seleção completa - resetar e começar nova seleção
+      setSelectedSlots([clickedIndex])
     }
   }
 
@@ -121,36 +126,30 @@ export function FlexibleTimeSlots({
   }
 
   const getPreviewSelection = () => {
+    // Se não tem seleção ou não está com mouse em cima, retorna a seleção atual
     if (selectedSlots.length === 0 || hoveredSlot === null) {
       return selectedSlots
     }
     
-    const minSelected = Math.min(...selectedSlots)
-    const maxSelected = Math.max(...selectedSlots)
-    
-    if (hoveredSlot >= minSelected && hoveredSlot <= maxSelected) {
+    // Se já tem seleção completa (range), apenas retorna a seleção
+    if (selectedSlots.length > 1) {
       return selectedSlots
     }
     
-    if (hoveredSlot < minSelected) {
-      const preview = []
-      for (let i = hoveredSlot; i <= maxSelected; i++) {
-        if (timeSlots[i]?.available) preview.push(i)
-        else break
-      }
-      return preview
+    // Se tem apenas o primeiro slot selecionado, mostra preview do range
+    const startIndex = selectedSlots[0]
+    const endIndex = hoveredSlot
+    
+    const minIndex = Math.min(startIndex, endIndex)
+    const maxIndex = Math.max(startIndex, endIndex)
+    
+    // Criar preview de TODOS os slots entre o início e o fim
+    const preview = []
+    for (let i = minIndex; i <= maxIndex; i++) {
+      preview.push(i)
     }
     
-    if (hoveredSlot > maxSelected) {
-      const preview = []
-      for (let i = minSelected; i <= hoveredSlot; i++) {
-        if (timeSlots[i]?.available) preview.push(i)
-        else break
-      }
-      return preview
-    }
-    
-    return selectedSlots
+    return preview
   }
 
   const previewSlots = getPreviewSelection()
@@ -207,17 +206,42 @@ export function FlexibleTimeSlots({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Horários Disponíveis - {selectedDate.toLocaleDateString('pt-BR', { 
-              weekday: 'long', 
-              day: '2-digit', 
-              month: '2-digit' 
-            })}
-            <Badge variant="outline" className="ml-auto">
-              {availableSlots.length} slots livres
-            </Badge>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 mb-1">
+                <Clock className="h-5 w-5" />
+                Horários Disponíveis - {selectedDate.toLocaleDateString('pt-BR', { 
+                  weekday: 'long', 
+                  day: '2-digit', 
+                  month: '2-digit' 
+                })}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {selectedSlots.length === 0 ? (
+                  '1️⃣ Clique no horário inicial'
+                ) : selectedSlots.length === 1 ? (
+                  '2️⃣ Agora clique no horário final'
+                ) : (
+                  `✅ ${selectedDuration} min selecionados! Confirme ou escolha outro`
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">
+                {availableSlots.length} slots livres
+              </Badge>
+              {selectedSlots.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setSelectedSlots([]); setHoveredSlot(null); }}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  Limpar
+                </Button>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-1">
@@ -269,7 +293,10 @@ export function FlexibleTimeSlots({
             <div className="flex items-start gap-3">
               <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-blue-800">
-                <p className="font-semibold mb-2">💡 Como selecionar seu horário:</p>
+                <p className="font-semibold mb-2 flex items-center gap-1">
+                  <Lightbulb className="h-4 w-4" />
+                  Como selecionar seu horário:
+                </p>
                 <ul className="space-y-1 text-xs">
                   <li><strong>1.</strong> Clique no horário de início desejado</li>
                   <li><strong>2.</strong> Clique nos slots seguintes para expandir o tempo</li>
@@ -302,7 +329,10 @@ export function FlexibleTimeSlots({
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-semibold text-green-900 mb-1">✅ Horário Selecionado</h4>
+                <h4 className="font-semibold text-green-900 mb-1 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  Horário Selecionado
+                </h4>
                 <div className="text-sm text-green-800 space-y-1">
                   <p className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />

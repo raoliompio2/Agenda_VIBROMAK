@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendNewAppointmentNotification } from '@/lib/notifications'
+import { generateRecurrenceInstances } from '@/lib/recurrence'
 import { z } from 'zod'
 
 const participantSchema = z.object({
@@ -8,6 +9,18 @@ const participantSchema = z.object({
   email: z.string().email(),
   isOptional: z.boolean().optional().default(false)
 })
+
+const recurrenceSchema = z.object({
+  enabled: z.boolean(),
+  frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY']),
+  interval: z.number().min(1).max(12),
+  byWeekday: z.array(z.number().min(0).max(6)).optional(),
+  byMonthDay: z.number().min(1).max(31).optional(),
+  bySetPos: z.number().optional(),
+  endType: z.enum(['never', 'date', 'count']),
+  endDate: z.string().datetime().optional(),
+  count: z.number().min(1).max(365).optional(),
+}).optional()
 
 const appointmentSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório'),
@@ -22,6 +35,7 @@ const appointmentSchema = z.object({
   clientPhone: z.string().optional(),
   clientCompany: z.string().optional(),
   participants: z.array(participantSchema).optional().default([]),
+  recurrence: recurrenceSchema,
 })
 
 export async function POST(request: NextRequest) {
@@ -92,47 +106,125 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Criar o agendamento com participantes
-    const appointment = await prisma.appointment.create({
-      data: {
-        title: validatedData.title,
-        description: validatedData.description,
-        startTime,
-        endTime,
-        duration: validatedData.duration,
-        type: validatedData.type,
-        location: validatedData.location,
-        clientName: validatedData.clientName,
-        clientEmail: validatedData.clientEmail,
-        clientPhone: validatedData.clientPhone,
-        clientCompany: validatedData.clientCompany,
-        status: 'PENDING',
-        participants: {
-          create: validatedData.participants.map(participant => ({
-            name: participant.name,
-            email: participant.email.toLowerCase(),
-            isOptional: participant.isOptional
-          }))
+    // Verificar se há recorrência configurada
+    const hasRecurrence = validatedData.recurrence?.enabled
+    let createdAppointments: any[] = []
+    let recurringGroupId: string | undefined
+    
+    if (hasRecurrence && validatedData.recurrence) {
+      // Gerar ID único para o grupo de recorrências
+      recurringGroupId = `rec_${Date.now()}_${Math.random().toString(36).substring(7)}`
+      
+      // Criar regra de recorrência
+      const recurrenceRule = await prisma.recurrenceRule.create({
+        data: {
+          frequency: validatedData.recurrence.frequency,
+          interval: validatedData.recurrence.interval,
+          byWeekday: validatedData.recurrence.byWeekday?.join(','),
+          byMonthDay: validatedData.recurrence.byMonthDay,
+          bySetPos: validatedData.recurrence.bySetPos,
+          endDate: validatedData.recurrence.endDate ? new Date(validatedData.recurrence.endDate) : null,
+          count: validatedData.recurrence.count,
         }
-      },
-      include: {
-        participants: true
+      })
+      
+      // Gerar todas as instâncias da recorrência
+      const instances = generateRecurrenceInstances(
+        startTime,
+        validatedData.duration,
+        validatedData.recurrence
+      )
+      
+      console.log(`📅 Criando ${instances.length} instâncias recorrentes`)
+      
+      // Criar todos os agendamentos da série
+      for (const instance of instances) {
+        const appointment = await prisma.appointment.create({
+          data: {
+            title: validatedData.title,
+            description: validatedData.description,
+            startTime: instance.startTime,
+            endTime: instance.endTime,
+            duration: validatedData.duration,
+            type: validatedData.type,
+            location: validatedData.location,
+            clientName: validatedData.clientName,
+            clientEmail: validatedData.clientEmail,
+            clientPhone: validatedData.clientPhone,
+            clientCompany: validatedData.clientCompany,
+            status: 'PENDING',
+            isRecurring: true,
+            recurrenceRuleId: recurrenceRule.id,
+            recurringGroupId,
+            participants: {
+              create: validatedData.participants.map(participant => ({
+                name: participant.name,
+                email: participant.email.toLowerCase(),
+                isOptional: participant.isOptional
+              }))
+            }
+          },
+          include: {
+            participants: true
+          }
+        })
+        
+        createdAppointments.push(appointment)
       }
-    })
-
-    // Enviar notificação de nova solicitação
-    await sendNewAppointmentNotification(appointment.id)
+      
+      // Enviar notificação apenas do primeiro agendamento
+      if (createdAppointments.length > 0) {
+        await sendNewAppointmentNotification(createdAppointments[0].id)
+      }
+    } else {
+      // Criar agendamento único
+      const appointment = await prisma.appointment.create({
+        data: {
+          title: validatedData.title,
+          description: validatedData.description,
+          startTime,
+          endTime,
+          duration: validatedData.duration,
+          type: validatedData.type,
+          location: validatedData.location,
+          clientName: validatedData.clientName,
+          clientEmail: validatedData.clientEmail,
+          clientPhone: validatedData.clientPhone,
+          clientCompany: validatedData.clientCompany,
+          status: 'PENDING',
+          participants: {
+            create: validatedData.participants.map(participant => ({
+              name: participant.name,
+              email: participant.email.toLowerCase(),
+              isOptional: participant.isOptional
+            }))
+          }
+        },
+        include: {
+          participants: true
+        }
+      })
+      
+      createdAppointments.push(appointment)
+      
+      // Enviar notificação de nova solicitação
+      await sendNewAppointmentNotification(appointment.id)
+    }
 
     return NextResponse.json(
       { 
-        message: 'Agendamento solicitado com sucesso!',
+        message: hasRecurrence 
+          ? `${createdAppointments.length} agendamentos recorrentes solicitados com sucesso!`
+          : 'Agendamento solicitado com sucesso!',
         appointment: {
-          id: appointment.id,
-          title: appointment.title,
-          startTime: appointment.startTime,
-          endTime: appointment.endTime,
-          status: appointment.status
-        }
+          id: createdAppointments[0].id,
+          title: createdAppointments[0].title,
+          startTime: createdAppointments[0].startTime,
+          endTime: createdAppointments[0].endTime,
+          status: createdAppointments[0].status
+        },
+        recurringGroupId: hasRecurrence ? recurringGroupId : undefined,
+        totalCreated: createdAppointments.length
       },
       { status: 201 }
     )

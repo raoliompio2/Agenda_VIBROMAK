@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, FileText } from 'lucide-react'
 
 interface AppointmentStatus {
   date: string // YYYY-MM-DD
@@ -31,6 +31,10 @@ interface VisualCalendarProps {
   workingDays?: number[]
   disabled?: boolean
   showLegend?: boolean
+  // Novo: seleção múltipla
+  allowMultiSelect?: boolean
+  selectedDates?: Date[]
+  onDatesSelect?: (dates: Date[]) => void
 }
 
 export function VisualCalendar({
@@ -42,11 +46,30 @@ export function VisualCalendar({
   maxDate,
   workingDays = [1, 2, 3, 4, 5],
   disabled = false,
-  showLegend = true
+  showLegend = true,
+  allowMultiSelect = false,
+  selectedDates = [],
+  onDatesSelect
 }: VisualCalendarProps) {
   const [isClient, setIsClient] = useState(false)
   const [currentDate, setCurrentDate] = useState(selectedDate || new Date())
   const [today, setToday] = useState<Date>(new Date())
+  
+  // Estados para seleção múltipla
+  const [firstSelectedDate, setFirstSelectedDate] = useState<Date | null>(null)
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null)
+  
+  // Sincronizar estado interno quando muda selectedDates externamente
+  useEffect(() => {
+    if (allowMultiSelect) {
+      if (selectedDates.length === 0) {
+        setFirstSelectedDate(null)
+        setHoveredDate(null)
+      } else if (selectedDates.length === 1) {
+        setFirstSelectedDate(selectedDates[0])
+      }
+    }
+  }, [selectedDates, allowMultiSelect])
   // Função para obter status simples de uma data
   const getDateStatus = (date: Date) => {
     const dateStr = date.toISOString().split('T')[0]
@@ -91,24 +114,27 @@ export function VisualCalendar({
     }
     
     // Se tem agendamentos, verificar o que mostrar
-    if (status && status.total > 0) {
-      const { occupationRate } = calculateOccupation(date, status)
-      
-      // Se ainda tem horários disponíveis (não está 100% ocupado)
-      if (occupationRate < 100) {
-        if (status.hasConfirmed && status.hasPending) {
-          // Misto: confirmado + pendente = amarelo (pendente tem prioridade visual)
-          return 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-150'
-        } else if (status.hasPending) {
-          // Só pendentes = amarelo
-          return 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-150'
-        } else if (status.hasConfirmed) {
-          // Confirmados = vermelho claro (ocupado mas não lotado)
-          return 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-150'
+    if (status) {
+      // Se tem agendamentos ativos (pending ou confirmed)
+      if (status.total > 0) {
+        const { occupationRate } = calculateOccupation(date, status)
+        
+        // Se ainda tem horários disponíveis (não está 100% ocupado)
+        if (occupationRate < 100) {
+          if (status.hasConfirmed && status.hasPending) {
+            // Misto: confirmado + pendente = amarelo (pendente tem prioridade visual)
+            return 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-150'
+          } else if (status.hasPending) {
+            // Só pendentes = amarelo
+            return 'bg-yellow-100 text-yellow-800 border border-yellow-200 hover:bg-yellow-150'
+          } else if (status.hasConfirmed) {
+            // Confirmados = vermelho claro (ocupado mas não lotado)
+            return 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-150'
+          }
+        } else {
+          // 100% ocupado = vermelho (indisponível)
+          return 'bg-red-200 text-red-900 border border-red-300 hover:bg-red-250'
         }
-      } else {
-        // 100% ocupado = vermelho (indisponível)
-        return 'bg-red-200 text-red-900 border border-red-300 hover:bg-red-250'
       }
     }
     
@@ -185,8 +211,112 @@ export function VisualCalendar({
   }
 
   const isSelected = (date: Date | null) => {
-    if (!date || !selectedDate) return false
-    return date.toDateString() === selectedDate.toDateString()
+    if (!date) return false
+    
+    if (allowMultiSelect) {
+      // Modo múltiplo: verificar se está no array
+      return selectedDates.some(d => d.toDateString() === date.toDateString())
+    } else {
+      // Modo single: verificar se é a data selecionada
+      if (!selectedDate) return false
+      return date.toDateString() === selectedDate.toDateString()
+    }
+  }
+  
+  // Funções para seleção múltipla (igual ao DateRangePicker)
+  const getPreviewDates = (): Date[] => {
+    if (!allowMultiSelect) return []
+    
+    // Se não tem seleção ou não está com hover, retorna a seleção atual
+    if (selectedDates.length === 0 || hoveredDate === null) {
+      return selectedDates
+    }
+    
+    // Se já tem seleção completa, retorna a seleção atual
+    if (selectedDates.length > 1) {
+      return selectedDates
+    }
+    
+    // Se tem apenas o primeiro dia, mostra preview do range
+    const startDate = selectedDates[0]
+    const start = startDate < hoveredDate ? startDate : hoveredDate
+    const end = startDate < hoveredDate ? hoveredDate : startDate
+    
+    const preview: Date[] = []
+    const currentDate = new Date(start)
+    
+    while (currentDate <= end) {
+      const dateToAdd = new Date(currentDate)
+      preview.push(dateToAdd)
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    return preview
+  }
+  
+  const previewDates = getPreviewDates()
+  
+  const isDateInPreview = (date: Date | null) => {
+    if (!date || !allowMultiSelect) return false
+    return previewDates.some(d => d.toDateString() === date.toDateString()) && !isSelected(date)
+  }
+  
+  const handleDateClickMulti = (date: Date) => {
+    if (!onDatesSelect) return
+    
+    console.log('🖱️ VisualCalendar MULTI-SELECT:', date.toLocaleDateString('pt-BR'), 'selectedDates.length:', selectedDates.length)
+    
+    if (selectedDates.length === 0) {
+      // Primeira seleção - define o INÍCIO
+      console.log('   ✅ PRIMEIRA SELEÇÃO - definindo início')
+      setFirstSelectedDate(date)
+      onDatesSelect([date])
+    } else if (selectedDates.length === 1) {
+      // Segunda seleção - define o FIM e seleciona TUDO NO MEIO
+      console.log('   ✅ SEGUNDA SELEÇÃO - selecionando range')
+      const start = firstSelectedDate! < date ? firstSelectedDate! : date
+      const end = firstSelectedDate! < date ? date : firstSelectedDate!
+      
+      console.log('   - Range:', start.toLocaleDateString('pt-BR'), 'até', end.toLocaleDateString('pt-BR'))
+      
+      // Gerar todas as datas entre start e end
+      const datesInRange: Date[] = []
+      const currentDate = new Date(start)
+      
+      while (currentDate <= end) {
+        const dateToAdd = new Date(currentDate)
+        
+        // Verificar se a data é selecionável
+        if (isDateSelectable(dateToAdd)) {
+          datesInRange.push(dateToAdd)
+          console.log('     ✓ Adicionado:', dateToAdd.toLocaleDateString('pt-BR'))
+        } else {
+          console.log('     ✗ Pulado (não selecionável):', dateToAdd.toLocaleDateString('pt-BR'))
+        }
+        
+        currentDate.setDate(currentDate.getDate() + 1)
+      }
+      
+      console.log('   - Total de datas no range:', datesInRange.length)
+      
+      // Se não há datas selecionáveis no range
+      if (datesInRange.length === 0) {
+        console.log('   ❌ Nenhuma data selecionável no range!')
+        alert('Não há dias úteis disponíveis no intervalo selecionado.')
+        setFirstSelectedDate(null)
+        onDatesSelect([])
+        return
+      }
+      
+      // Selecionar TODAS as datas no range
+      console.log('   ✅ Selecionando', datesInRange.length, 'datas')
+      onDatesSelect(datesInRange)
+    } else {
+      // Já tem uma seleção completa - resetar e começar nova seleção
+      console.log('   🔄 RESET - começando nova seleção')
+      setFirstSelectedDate(date)
+      onDatesSelect([date])
+    }
   }
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -219,12 +349,42 @@ export function VisualCalendar({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" />
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </CardTitle>
+            <div className="flex-1">
+              <CardTitle className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </CardTitle>
+              
+              {/* Instruções do modo multi-seleção */}
+              {allowMultiSelect && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {selectedDates.length === 0 ? (
+                    '1. Clique no dia inicial'
+                  ) : selectedDates.length === 1 ? (
+                    '2. Agora clique no dia final'
+                  ) : (
+                    `${selectedDates.length} dia${selectedDates.length !== 1 ? 's' : ''} selecionado${selectedDates.length !== 1 ? 's' : ''}!`
+                  )}
+                </p>
+              )}
+            </div>
             
             <div className="flex items-center gap-1">
+              {allowMultiSelect && selectedDates.length > 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFirstSelectedDate(null)
+                    setHoveredDate(null)
+                    onDatesSelect?.([])
+                  }}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 mr-2"
+                >
+                  Limpar
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -261,6 +421,8 @@ export function VisualCalendar({
               const status = date ? getDateStatus(date) : null
               const occupation = date && status ? calculateOccupation(date, status) : null
               const isSelectableDate = date ? isDateSelectable(date) : false
+              const isInPreview = date ? isDateInPreview(date) : false
+              const isSelectedDate = date ? isSelected(date) : false
               
               return (
                 <div key={index} className="relative">
@@ -269,11 +431,43 @@ export function VisualCalendar({
                     variant="ghost"
                     size="sm"
                     disabled={!date || !isSelectableDate || disabled}
-                    onClick={() => date && isSelectableDate && onDateSelect(date)}
+                    onClick={() => {
+                      if (!date || !isSelectableDate) return
+                      if (allowMultiSelect) {
+                        handleDateClickMulti(date)
+                      } else {
+                        onDateSelect(date)
+                      }
+                    }}
+                    onMouseEnter={() => {
+                      if (allowMultiSelect && date && isSelectableDate && selectedDates.length === 1) {
+                        setHoveredDate(date)
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (allowMultiSelect) {
+                        setHoveredDate(null)
+                      }
+                    }}
                     className={`
                       h-12 w-full p-1 relative flex flex-col items-center justify-center
                       ${!date ? 'invisible' : ''}
-                      ${date ? getDateColorClass(date) : ''}
+                      ${
+                        !date ? '' :
+                        // Modo multi-select tem PRIORIDADE TOTAL sobre cores de status
+                        allowMultiSelect && (isSelectedDate || isInPreview) ? (
+                          isSelectedDate
+                            ? 'bg-primary text-primary-foreground shadow-md hover:bg-primary/90 font-bold border-2 border-primary'
+                            : isInPreview && isSelectableDate
+                              ? 'bg-primary/30 border-2 border-primary/50 text-primary hover:bg-primary/40'
+                              : isInPreview && !isSelectableDate
+                                ? 'bg-red-50 border-2 border-red-300 text-red-400 opacity-60'
+                                : getDateColorClass(date)
+                        ) : (
+                          // Modo single OU multi sem seleção: usa cores de status normalmente
+                          getDateColorClass(date)
+                        )
+                      }
                       ${!isSelectableDate && date ? 'opacity-40 cursor-not-allowed' : ''}
                       transition-all duration-200
                     `}
@@ -303,11 +497,54 @@ export function VisualCalendar({
         </CardContent>
       </Card>
 
+      {/* Preview da seleção no modo multi (quando hovering) */}
+      {allowMultiSelect && previewDates.length > selectedDates.length && hoveredDate !== null && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-4 pb-4">
+            <div className="text-center">
+              <p className="text-sm text-blue-800">
+                <strong>Preview:</strong> {previewDates.length} dia{previewDates.length !== 1 ? 's' : ''} será{previewDates.length !== 1 ? 'ão' : ''} selecionado{previewDates.length !== 1 ? 's' : ''}
+                <span className="text-xs text-blue-600 ml-2">
+                  (Clique para confirmar esta seleção)
+                </span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resumo da seleção múltipla */}
+      {allowMultiSelect && selectedDates.length > 0 && (
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-green-900">
+              {selectedDates.length} Dia{selectedDates.length !== 1 ? 's' : ''} Selecionado{selectedDates.length !== 1 ? 's' : ''}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {selectedDates.map((date, index) => (
+                <Badge key={index} variant="outline" className="bg-white text-green-900 border-green-300">
+                  {date.toLocaleDateString('pt-BR', { 
+                    weekday: 'short', 
+                    day: '2-digit', 
+                    month: '2-digit' 
+                  })}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Legenda */}
-      {showLegend && (
+      {showLegend && !allowMultiSelect && (
         <Card className="bg-slate-50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">📋 Legenda</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Legenda
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
@@ -322,6 +559,10 @@ export function VisualCalendar({
               <div className="flex items-center gap-2">
                 <div className="h-4 w-4 rounded bg-red-200 border border-red-300"></div>
                 <span>Confirmado</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded bg-gray-100 border border-gray-200"></div>
+                <span>Cancelado/Completo</span>
               </div>
             </div>
             <div className="mt-3 text-xs text-muted-foreground">
@@ -350,7 +591,17 @@ export function VisualCalendar({
               const status = getDateStatus(selectedDate)
               const occupation = selectedDate && status ? calculateOccupation(selectedDate, status) : null
               
-              if (!status || status.total === 0) {
+              if (!status) {
+                return (
+                  <div className="flex items-center gap-2 text-green-700">
+                    <div className="h-3 w-3 rounded-full bg-green-400"></div>
+                    <span className="font-medium">Agenda livre</span>
+                  </div>
+                )
+              }
+              
+              // Se não tem nenhum agendamento
+              if (status.total === 0) {
                 return (
                   <div className="flex items-center gap-2 text-green-700">
                     <div className="h-3 w-3 rounded-full bg-green-400"></div>

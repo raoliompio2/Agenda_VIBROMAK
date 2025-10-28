@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { X, Plus, Users, Mail, UserCheck, UserX } from 'lucide-react'
+import { X, Plus, Users, Mail, UserCheck, UserX, Lightbulb, AlertCircle } from 'lucide-react'
 import { validateEmail } from '@/lib/utils'
 
 export interface Participant {
@@ -227,14 +227,18 @@ export function ParticipantsManager({
 
         {/* Limite de participantes */}
         {participants.length >= maxParticipants && (
-          <p className="text-sm text-amber-600 bg-amber-50 rounded p-2">
-            ⚠️ Limite de {maxParticipants} participantes atingido
+          <p className="text-sm text-amber-600 bg-amber-50 rounded p-2 flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            Limite de {maxParticipants} participantes atingido
           </p>
         )}
 
         {/* Ajuda */}
         <div className="text-xs text-muted-foreground bg-blue-50 rounded p-2">
-          <p className="font-medium text-blue-900 mb-1">💡 Dicas sobre participantes:</p>
+          <p className="font-medium text-blue-900 mb-1 flex items-center gap-1">
+            <Lightbulb className="h-3 w-3" />
+            Dicas sobre participantes:
+          </p>
           <ul className="space-y-1 text-blue-800">
             <li>• <strong>Obrigatórios:</strong> Pessoas essenciais para a reunião</li>
             <li>• <strong>Opcionais:</strong> Pessoas que podem participar se disponíveis</li>

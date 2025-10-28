@@ -2,7 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Clock, User, Building, AlertCircle } from 'lucide-react'
+import { 
+  Calendar, Clock, User, Building, AlertCircle, CheckCircle,
+  Handshake, Video, Presentation, Lock, Plane, FileText, Lightbulb
+} from 'lucide-react'
 import { formatTime, formatTimeRange } from '@/lib/utils'
 
 interface ExistingAppointment {
@@ -38,12 +41,12 @@ const statusLabels = {
 }
 
 const typeIcons = {
-  MEETING: '🤝',
-  CALL: '📞',
-  PRESENTATION: '📊',
-  PARTICULAR: '🔒',
-  VIAGEM: '✈️',
-  OTHER: '📝'
+  MEETING: Handshake,
+  CALL: Video,
+  PRESENTATION: Presentation,
+  PARTICULAR: Lock,
+  VIAGEM: Plane,
+  OTHER: FileText
 }
 
 export function ExistingAppointments({
@@ -57,8 +60,8 @@ export function ExistingAppointments({
       <Card className="bg-green-50 border-green-200">
         <CardContent className="pt-6">
           <div className="text-center py-4">
-            <Calendar className="h-8 w-8 mx-auto mb-2 text-green-600" />
-            <p className="text-green-900 font-medium">✅ Nenhum agendamento nesta data</p>
+            <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-600" />
+            <p className="text-green-900 font-medium">Nenhum agendamento nesta data</p>
             <p className="text-sm text-green-700">
               A agenda está livre para {selectedDate.toLocaleDateString('pt-BR', { 
                 weekday: 'long', 
@@ -79,7 +82,7 @@ export function ExistingAppointments({
       <CardHeader className={isCompact ? 'pb-3' : 'pb-4'}>
         <CardTitle className="flex items-center gap-2 text-amber-900">
           <AlertCircle className="h-5 w-5" />
-          ⚠️ Horários já Ocupados - {selectedDate.toLocaleDateString('pt-BR', { 
+          Horários já Ocupados - {selectedDate.toLocaleDateString('pt-BR', { 
             weekday: 'long', 
             day: '2-digit', 
             month: 'long' 
@@ -105,9 +108,10 @@ export function ExistingAppointments({
             >
               {/* Ícone do tipo */}
               <div className="flex-shrink-0 mt-1">
-                <span className="text-lg">
-                  {appointment.type ? typeIcons[appointment.type] : '📅'}
-                </span>
+                {(() => {
+                  const Icon = appointment.type ? typeIcons[appointment.type] : Calendar
+                  return <Icon className="h-5 w-5 text-gray-600" />
+                })()}
               </div>
               
               {/* Informações principais */}
@@ -161,9 +165,12 @@ export function ExistingAppointments({
         
         {!isCompact && (
           <div className="mt-4 p-3 bg-amber-100 rounded-lg border border-amber-200">
-            <p className="text-xs text-amber-800">
-              💡 <strong>Dica:</strong> Escolha um horário que não conflite com os agendamentos acima. 
-              O sistema só permitirá selecionar horários livres.
+            <p className="text-xs text-amber-800 flex items-start gap-1">
+              <Lightbulb className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span>
+                <strong>Dica:</strong> Escolha um horário que não conflite com os agendamentos acima. 
+                O sistema só permitirá selecionar horários livres.
+              </span>
             </p>
           </div>
         )}

@@ -237,6 +237,8 @@ function AgendarContent() {
                 onSubmit={handleSubmit}
                 preSelectedSlot={preSelectedSlot}
                 submitText="Enviar Solicitação"
+                allowMultipleDays={true}
+                workingDays={workingDays}
               />
             </>
           ) : (

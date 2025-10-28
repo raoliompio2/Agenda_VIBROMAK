@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Clock, Calendar, Plus, ArrowRight } from 'lucide-react'
+import { Clock, Calendar, Plus, ArrowRight, Lightbulb, CheckCircle, FileText } from 'lucide-react'
 import { formatTime, generateTimeSlots, formatDuration } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -92,7 +92,7 @@ export function AvailableTimeSlots({
   }
 
   const buildScheduleUrl = () => {
-    if (!selectedSlot) return '/agendar'
+    if (!selectedSlot) return '/'
     
     const params = new URLSearchParams({
       date: selectedSlot.startTime.toISOString().split('T')[0],
@@ -100,7 +100,7 @@ export function AvailableTimeSlots({
       duration: selectedSlot.duration.toString()
     })
     
-    return `/agendar?${params.toString()}`
+    return `/?${params.toString()}`
   }
 
   if (availableSlots.length === 0) {
@@ -139,8 +139,9 @@ export function AvailableTimeSlots({
               </Button>
             ))}
           </div>
-          <p className="text-xs text-blue-700 mt-2">
-            💡 Selecione a duração desejada e depois escolha um horário abaixo
+          <p className="text-xs text-blue-700 mt-2 flex items-center gap-1">
+            <Lightbulb className="h-3 w-3" />
+            Selecione a duração desejada e depois escolha um horário abaixo
           </p>
         </CardContent>
       </Card>
@@ -207,7 +208,10 @@ export function AvailableTimeSlots({
             <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-semibold text-green-900 mb-1">✅ Horário Selecionado</h4>
+                  <h4 className="font-semibold text-green-900 mb-1 flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5" />
+                    Horário Selecionado
+                  </h4>
                   <p className="text-sm text-green-800">
                     <Clock className="inline h-4 w-4 mr-1" />
                     {formatTime(selectedSlot.startTime)} às {formatTime(new Date(selectedSlot.startTime.getTime() + selectedSlot.duration * 60000))}
@@ -230,11 +234,14 @@ export function AvailableTimeSlots({
 
           {/* Dicas */}
           <div className="mt-4 text-xs text-muted-foreground bg-slate-50 rounded p-3">
-            <p className="font-medium mb-1">📋 Como usar:</p>
+            <p className="font-medium mb-1 flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              Como usar:
+            </p>
             <ul className="space-y-1">
-              <li>1️⃣ Escolha a <strong>duração</strong> desejada acima</li>
-              <li>2️⃣ Clique no <strong>horário de início</strong> preferido</li>
-              <li>3️⃣ Clique em "<strong>Solicitar Agendamento</strong>" para preencher o formulário</li>
+              <li>1. Escolha a <strong>duração</strong> desejada acima</li>
+              <li>2. Clique no <strong>horário de início</strong> preferido</li>
+              <li>3. Clique em "<strong>Solicitar Agendamento</strong>" para preencher o formulário</li>
             </ul>
           </div>
         </CardContent>

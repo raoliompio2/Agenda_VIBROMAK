@@ -70,7 +70,7 @@ export function Header() {
                   </CardContent>
                 </Card>
                 
-                <Link href="/agendar">
+                <Link href="/">
                   <Button 
                     size="sm"
                     className="bg-vibromak-secondary hover:bg-vibromak-secondary/90 text-white"
@@ -159,7 +159,7 @@ export function Header() {
                       </div>
                     </div>
                     <Link 
-                      href="/agendar"
+                      href="/"
                       className="block py-2 px-4 text-white bg-vibromak-secondary hover:bg-vibromak-secondary/90 rounded transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >

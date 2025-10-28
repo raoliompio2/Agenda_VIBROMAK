@@ -14,7 +14,12 @@ import {
   MapPin,
   FileText,
   X,
-  MessageSquare
+  MessageSquare,
+  Video,
+  Presentation,
+  Lock,
+  Plane,
+  Handshake
 } from 'lucide-react'
 import { formatDateTime, formatTime } from '@/lib/utils'
 
@@ -55,13 +60,22 @@ const statusLabels = {
   COMPLETED: 'Concluído',
 }
 
+const typeIcons = {
+  MEETING: Handshake,
+  CALL: Video,
+  PRESENTATION: Presentation,
+  PARTICULAR: Lock,
+  VIAGEM: Plane,
+  OTHER: FileText
+}
+
 const typeLabels = {
-  MEETING: '🤝 Reunião Presencial',
-  CALL: '📞 Ligação/Videoconferência', 
-  PRESENTATION: '📊 Apresentação',
-  PARTICULAR: '🔒 Compromisso Particular',
-  VIAGEM: '✈️ Viagem',
-  OTHER: '📝 Outros Assuntos',
+  MEETING: 'Reunião Presencial',
+  CALL: 'Ligação/Videoconferência', 
+  PRESENTATION: 'Apresentação',
+  PARTICULAR: 'Compromisso Particular',
+  VIAGEM: 'Viagem',
+  OTHER: 'Outros Assuntos',
 }
 
 export function AppointmentDetailsModal({ 
@@ -107,6 +121,10 @@ export function AppointmentDetailsModal({
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-lg text-gray-600">
+                {(() => {
+                  const Icon = typeIcons[appointment.type]
+                  return <Icon className="h-5 w-5" />
+                })()}
                 <span>{typeLabels[appointment.type]}</span>
               </div>
             </div>

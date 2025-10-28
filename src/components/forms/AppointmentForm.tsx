@@ -10,10 +10,25 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CalendarPicker } from '@/components/calendar/CalendarPicker'
 import { TimeSlotPicker } from '@/components/calendar/TimeSlotPicker'
+import { RangeTimeSlotPicker } from '@/components/calendar/RangeTimeSlotPicker'
+import { DateRangePicker } from '@/components/calendar/DateRangePicker'
+import { RecurrenceSelector, type RecurrenceConfig } from '@/components/calendar/RecurrenceSelector'
 import { ParticipantsManager, type Participant } from './ParticipantsManager'
 import { validateEmail, validatePhone, formatDateTime, formatDuration, formatTimeRange } from '@/lib/utils'
 import { useToast } from '@/components/ui/alert-toast'
-import { User, Mail, Phone, Building, Calendar, Clock, FileText, Users } from 'lucide-react'
+import { 
+  User, Mail, Phone, Building, Calendar, Clock, FileText, Users,
+  UserCheck, Video, Presentation, Lock, Plane
+} from 'lucide-react'
+
+interface RecurrenceData {
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
+  interval: number
+  endDate?: Date
+  count?: number
+  byWeekday?: string
+  byMonthDay?: number
+}
 
 interface AppointmentFormData {
   title: string
@@ -26,7 +41,11 @@ interface AppointmentFormData {
   clientCompany: string
   participants: Participant[]
   selectedDate?: Date
+  selectedDates: Date[]
   selectedTime?: Date
+  selectedTimeEnd?: Date
+  isRecurring: boolean
+  recurrence?: RecurrenceData
 }
 
 interface AppointmentFormProps {
@@ -66,12 +85,23 @@ export function AppointmentForm({
     clientCompany: initialData.clientCompany || '',
     participants: initialData.participants || [],
     selectedDate: initialData.selectedDate,
+    selectedDates: [],
     selectedTime: initialData.selectedTime,
+    selectedTimeEnd: undefined,
+    isRecurring: false,
+    recurrence: undefined
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { showToast, Toast } = useToast()
+  const [recurrenceConfig, setRecurrenceConfig] = useState<RecurrenceConfig>({
+    enabled: false,
+    frequency: 'WEEKLY',
+    interval: 1,
+    endType: 'never'
+  })
+  const [useMultipleDays, setUseMultipleDays] = useState(false)
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -94,8 +124,14 @@ export function AppointmentForm({
       newErrors.clientPhone = 'Telefone inválido'
     }
 
-    if (!formData.selectedDate) {
-      newErrors.selectedDate = 'Selecione uma data'
+    if (useMultipleDays) {
+      if (formData.selectedDates.length === 0) {
+        newErrors.selectedDate = 'Selecione pelo menos um dia'
+      }
+    } else {
+      if (!formData.selectedDate) {
+        newErrors.selectedDate = 'Selecione uma data'
+      }
     }
 
     if (!formData.selectedTime) {
@@ -114,17 +150,112 @@ export function AppointmentForm({
     setIsSubmitting(true)
     
     try {
-      const startTime = formData.selectedTime
-      const endTime = new Date(startTime.getTime() + formData.duration * 60000)
+      // Se está usando múltiplos dias, criar um agendamento para cada dia
+      if (useMultipleDays && formData.selectedDates.length > 0) {
+        let successCount = 0
+        let errorCount = 0
+        const errors: string[] = []
 
-      await onSubmit({
-        ...formData,
-        startTime,
-        endTime
-      })
+        for (const selectedDate of formData.selectedDates) {
+          try {
+            // Combinar a data selecionada com o horário
+            const startTime = new Date(selectedDate)
+            startTime.setHours(formData.selectedTime.getHours())
+            startTime.setMinutes(formData.selectedTime.getMinutes())
+            startTime.setSeconds(0)
+            startTime.setMilliseconds(0)
+
+            const endTime = formData.selectedTimeEnd 
+              ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(),
+                  formData.selectedTimeEnd.getHours(), formData.selectedTimeEnd.getMinutes())
+              : new Date(startTime.getTime() + formData.duration * 60000)
+
+            const submissionData: any = {
+              ...formData,
+              startTime,
+              endTime
+            }
+
+            // Multi-seleção NÃO suporta recorrência
+            // Cada data selecionada cria um agendamento individual
+
+            await onSubmit(submissionData)
+            successCount++
+          } catch (error) {
+            errorCount++
+            const dateStr = selectedDate.toLocaleDateString('pt-BR')
+            errors.push(`${dateStr}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+          }
+        }
+
+        if (successCount > 0) {
+          showToast({
+            type: 'success',
+            title: 'Agendamentos Criados',
+            message: `${successCount} de ${formData.selectedDates.length} agendamentos criados com sucesso`,
+            duration: 5000
+          })
+        }
+
+        if (errorCount > 0) {
+          showToast({
+            type: 'error',
+            title: 'Alguns agendamentos falharam',
+            message: errors.join('\n'),
+            duration: 10000
+          })
+        }
+
+        if (successCount > 0) {
+          // Resetar formulário se pelo menos um sucesso
+          setFormData({
+            title: '',
+            description: '',
+            type: 'MEETING',
+            duration: 60,
+            clientName: '',
+            clientEmail: '',
+            clientPhone: '',
+            clientCompany: '',
+            participants: [],
+            selectedDate: undefined,
+            selectedDates: [],
+            selectedTime: undefined,
+            selectedTimeEnd: undefined,
+            isRecurring: false,
+            recurrence: undefined
+          })
+          setUseMultipleDays(false)
+        }
+      } else {
+        // Modo de dia único (original)
+        const startTime = formData.selectedTime
+        const endTime = formData.selectedTimeEnd || new Date(startTime.getTime() + formData.duration * 60000)
+
+        const submissionData: any = {
+          ...formData,
+          startTime,
+          endTime
+        }
+
+        if (recurrenceConfig.enabled) {
+          submissionData.recurrence = {
+            enabled: true,
+            frequency: recurrenceConfig.frequency,
+            interval: recurrenceConfig.interval,
+            byWeekday: recurrenceConfig.byWeekday,
+            byMonthDay: recurrenceConfig.byMonthDay,
+            bySetPos: recurrenceConfig.bySetPos,
+            endType: recurrenceConfig.endType,
+            endDate: recurrenceConfig.endDate?.toISOString(),
+            count: recurrenceConfig.count
+          }
+        }
+
+        await onSubmit(submissionData)
+      }
     } catch (error) {
       console.error('Erro ao enviar formulário:', error)
-      // Mostrar erro específico para o usuário
       const errorMessage = error instanceof Error ? error.message : 'Erro ao enviar solicitação. Tente novamente.'
       showToast({
         type: 'error',
@@ -182,16 +313,46 @@ export function AppointmentForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MEETING">Reunião Presencial</SelectItem>
-                      <SelectItem value="CALL">Ligação/Videochamada</SelectItem>
-                      <SelectItem value="PRESENTATION">Apresentação</SelectItem>
+                      <SelectItem value="MEETING">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="h-4 w-4" />
+                          Reunião Presencial
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="CALL">
+                        <div className="flex items-center gap-2">
+                          <Video className="h-4 w-4" />
+                          Ligação/Videochamada
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="PRESENTATION">
+                        <div className="flex items-center gap-2">
+                          <Presentation className="h-4 w-4" />
+                          Apresentação
+                        </div>
+                      </SelectItem>
                       {(session?.user?.role === 'ADMIN' || session?.user?.role === 'SECRETARY') && (
                         <>
-                          <SelectItem value="PARTICULAR">🔒 Compromisso Particular</SelectItem>
-                          <SelectItem value="VIAGEM">✈️ Viagem</SelectItem>
+                          <SelectItem value="PARTICULAR">
+                            <div className="flex items-center gap-2">
+                              <Lock className="h-4 w-4" />
+                              Compromisso Particular
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="VIAGEM">
+                            <div className="flex items-center gap-2">
+                              <Plane className="h-4 w-4" />
+                              Viagem
+                            </div>
+                          </SelectItem>
                         </>
                       )}
-                      <SelectItem value="OTHER">Outro</SelectItem>
+                      <SelectItem value="OTHER">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Outro
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -319,36 +480,151 @@ export function AppointmentForm({
         disabled={disabled}
       />
 
+      {/* Recorrência - SÓ para modo de data única */}
+      {(session?.user?.role === 'ADMIN' || session?.user?.role === 'SECRETARY') && !useMultipleDays && (
+        <RecurrenceSelector
+          value={recurrenceConfig}
+          onChange={(config) => {
+            setRecurrenceConfig(config)
+            updateFormData('isRecurring', config.enabled)
+            if (config.enabled) {
+              updateFormData('recurrence', {
+                frequency: config.frequency,
+                interval: config.interval,
+                endDate: config.endDate,
+                count: config.count,
+                byWeekday: config.byWeekday?.join(','),
+                byMonthDay: config.byMonthDay
+              })
+            } else {
+              updateFormData('recurrence', undefined)
+            }
+          }}
+          baseDate={formData.selectedDate}
+          disabled={disabled}
+        />
+      )}
+
+      {/* Aviso quando multi-seleção está ativa */}
+      {useMultipleDays && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start gap-2">
+              <div className="text-amber-600 mt-0.5">⚠️</div>
+              <div>
+                <p className="text-sm font-medium text-amber-900">
+                  Modo Multi-Seleção Ativo
+                </p>
+                <p className="text-xs text-amber-700 mt-1">
+                  Recorrência não está disponível quando você seleciona múltiplas datas. 
+                  Cada data selecionada criará um agendamento individual.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Seleção de Data */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
-          <CalendarPicker
-            selectedDate={formData.selectedDate}
-            onDateSelect={(date) => {
-              updateFormData('selectedDate', date)
-              updateFormData('selectedTime', undefined) // Reset time when date changes
-              onDateChange?.(date) // Buscar agendamentos existentes
-            }}
-            workingDays={workingDays}
-            disabled={disabled}
-          />
+          <Card className="mb-4">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="multiple-days" className="text-sm font-medium">
+                  Selecionar múltiplos dias
+                </Label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="multiple-days"
+                    checked={useMultipleDays}
+                    onChange={(e) => {
+                      setUseMultipleDays(e.target.checked)
+                      if (e.target.checked) {
+                        updateFormData('selectedDate', undefined)
+                      } else {
+                        updateFormData('selectedDates', [])
+                      }
+                    }}
+                    disabled={disabled}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {useMultipleDays 
+                  ? 'Clique no dia inicial e depois no final para selecionar o intervalo'
+                  : 'Selecione apenas um dia para o agendamento'
+                }
+              </p>
+            </CardContent>
+          </Card>
+
+          {useMultipleDays ? (
+            <DateRangePicker
+              selectedDates={formData.selectedDates}
+              onDatesSelect={(dates) => {
+                updateFormData('selectedDates', dates)
+                updateFormData('selectedTime', undefined)
+              }}
+              workingDays={workingDays}
+              disabled={disabled}
+              showLegend={true}
+            />
+          ) : (
+            <CalendarPicker
+              selectedDate={formData.selectedDate}
+              onDateSelect={(date) => {
+                updateFormData('selectedDate', date)
+                updateFormData('selectedTime', undefined)
+                onDateChange?.(date)
+              }}
+              workingDays={workingDays}
+              disabled={disabled}
+            />
+          )}
           {errors.selectedDate && (
             <p className="text-sm text-red-500 mt-2">{errors.selectedDate}</p>
           )}
         </div>
 
         <div>
-          {formData.selectedDate && (
-            <TimeSlotPicker
-              selectedDate={formData.selectedDate}
-              selectedTime={formData.selectedTime}
-              onTimeSelect={(time) => updateFormData('selectedTime', time)}
+          {((useMultipleDays && formData.selectedDates.length > 0) || (!useMultipleDays && formData.selectedDate)) && (
+            <RangeTimeSlotPicker
+              selectedDate={useMultipleDays ? formData.selectedDates[0] : formData.selectedDate!}
+              selectedTimeRange={formData.selectedTime && formData.selectedTimeEnd ? { 
+                start: formData.selectedTime, 
+                end: formData.selectedTimeEnd 
+              } : undefined}
+              onTimeRangeSelect={(start, end) => {
+                updateFormData('selectedTime', start)
+                updateFormData('selectedTimeEnd', end)
+                if (start && end) {
+                  const durationMinutes = Math.floor((end.getTime() - start.getTime()) / (1000 * 60))
+                  updateFormData('duration', durationMinutes)
+                }
+              }}
               workingHoursStart={workingHoursStart}
               workingHoursEnd={workingHoursEnd}
-              meetingDuration={formData.duration}
+              meetingDuration={60}
+              bufferTime={0}
               existingAppointments={existingAppointments}
               disabled={disabled}
             />
+          )}
+          {useMultipleDays && formData.selectedDates.length > 0 && (
+            <Card className="mt-4">
+              <CardContent className="pt-4">
+                <p className="text-sm text-blue-600 font-medium">
+                  O mesmo horário será aplicado para todos os {formData.selectedDates.length} dias selecionados
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Cada data criará um agendamento individual (sem recorrência)
+                </p>
+              </CardContent>
+            </Card>
           )}
           {errors.selectedTime && (
             <p className="text-sm text-red-500 mt-2">{errors.selectedTime}</p>
@@ -360,7 +636,10 @@ export function AppointmentForm({
       {formData.selectedTime && (
         <Card className="bg-blue-50 border-blue-200">
           <CardHeader>
-            <CardTitle className="text-lg text-blue-900">📋 Resumo do Agendamento</CardTitle>
+            <CardTitle className="text-lg text-blue-900 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Resumo do Agendamento
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -394,7 +673,10 @@ export function AppointmentForm({
                     <span className="font-semibold text-blue-900">Horário:</span>
                     <br />
                     <span className="text-blue-800">
-                      {formatTimeRange(formData.selectedTime, new Date(formData.selectedTime.getTime() + formData.duration * 60000))}
+                      {formatTimeRange(
+                        formData.selectedTime, 
+                        formData.selectedTimeEnd || new Date(formData.selectedTime.getTime() + formData.duration * 60000)
+                      )}
                     </span>
                     <br />
                     <span className="text-blue-600 text-xs">

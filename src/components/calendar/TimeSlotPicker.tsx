@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { generateTimeSlots, formatDate } from '@/lib/utils'
+import { Clock, Lightbulb, Info, AlertCircle } from 'lucide-react'
 
 interface TimeSlot {
   time: string
@@ -65,15 +66,17 @@ export function TimeSlotPicker({
       <CardContent>
         {timeSlots.length === 0 ? (
           <div className="text-center py-6">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
             <p className="text-muted-foreground mb-2">
               {meetingDuration >= 240 ? 
-                '⏰ Nenhum horário disponível para reunião longa nesta data' :
+                'Nenhum horário disponível para reunião longa nesta data' :
                 'Nenhum horário disponível para esta data'
               }
             </p>
             {meetingDuration >= 240 && (
-              <p className="text-xs text-amber-600 bg-amber-50 rounded p-2 mt-2 inline-block">
-                💡 Sugestão: Considere dividir em reuniões menores ou escolher outra data
+              <p className="text-xs text-amber-600 bg-amber-50 rounded p-2 mt-2 inline-block flex items-center gap-1">
+                <Lightbulb className="h-3 w-3" />
+                Sugestão: Considere dividir em reuniões menores ou escolher outra data
               </p>
             )}
           </div>
@@ -132,14 +135,20 @@ export function TimeSlotPicker({
               <span>Ocupado</span>
             </div>
           </div>
-          <div className="text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded p-2">
-            💡 <strong>Dica:</strong> Horários ocupados aparecem riscados e em vermelho. 
-            Passe o mouse sobre um horário para ver se está disponível ou ocupado.
+          <div className="text-xs text-gray-600 bg-blue-50 border border-blue-200 rounded p-2 flex items-start gap-1">
+            <Lightbulb className="h-3 w-3 mt-0.5 flex-shrink-0" />
+            <span>
+              <strong>Dica:</strong> Horários ocupados aparecem riscados e em vermelho. 
+              Passe o mouse sobre um horário para ver se está disponível ou ocupado.
+            </span>
           </div>
           {meetingDuration >= 120 && (
-            <p className="text-xs text-blue-600 bg-blue-50 rounded p-2">
-              ℹ️ <strong>Reunião longa:</strong> Os horários mostram quando sua reunião pode iniciar. 
-              Ela durará {Math.floor(meetingDuration / 60)}h{meetingDuration % 60 > 0 ? ` ${meetingDuration % 60}min` : ''} após o horário selecionado.
+            <p className="text-xs text-blue-600 bg-blue-50 rounded p-2 flex items-start gap-1">
+              <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span>
+                <strong>Reunião longa:</strong> Os horários mostram quando sua reunião pode iniciar. 
+                Ela durará {Math.floor(meetingDuration / 60)}h{meetingDuration % 60 > 0 ? ` ${meetingDuration % 60}min` : ''} após o horário selecionado.
+              </span>
             </p>
           )}
         </div>

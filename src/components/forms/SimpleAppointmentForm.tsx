@@ -8,10 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DateRangePicker } from '@/components/calendar/DateRangePicker'
 import { ParticipantsManager, type Participant } from './ParticipantsManager'
 import { useToast } from '@/components/ui/alert-toast'
 import { validateEmail, validatePhone, formatDateTime, formatTimeRange } from '@/lib/utils'
-import { User, Mail, Phone, Building, Calendar, Clock, FileText, Users, CheckCircle } from 'lucide-react'
+import { 
+  User, Mail, Phone, Building, Calendar, Clock, FileText, Users, CheckCircle,
+  UserCheck, Video, Presentation, Lock, Plane, Lightbulb, Timer
+} from 'lucide-react'
 
 interface SimpleAppointmentFormData {
   title: string
@@ -29,21 +33,27 @@ interface SimpleAppointmentFormProps {
     startTime: Date
     endTime: Date
     duration: number
+    multipleDates?: Date[] // Para agendamentos recorrentes
   }) => Promise<void>
   preSelectedSlot: {
     date: Date
     startTime: Date
     duration: number
+    multipleDates?: Date[] // Datas múltiplas selecionadas
   }
   disabled?: boolean
   submitText?: string
+  allowMultipleDays?: boolean
+  workingDays?: number[]
 }
 
 export function SimpleAppointmentForm({
   onSubmit,
   preSelectedSlot,
   disabled = false,
-  submitText = 'Enviar Solicitação'
+  submitText = 'Enviar Solicitação',
+  allowMultipleDays = false,
+  workingDays = [1, 2, 3, 4, 5]
 }: SimpleAppointmentFormProps) {
   const { data: session } = useSession()
   const [isClient, setIsClient] = useState(false)
@@ -61,6 +71,8 @@ export function SimpleAppointmentForm({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [useMultipleDays, setUseMultipleDays] = useState(false)
+  const [selectedDates, setSelectedDates] = useState<Date[]>([])
   const { showToast, Toast } = useToast()
 
   useEffect(() => {
@@ -100,22 +112,75 @@ export function SimpleAppointmentForm({
     setIsSubmitting(true)
     
     try {
-      const endTime = new Date(preSelectedSlot.startTime.getTime() + preSelectedSlot.duration * 60000)
+      if (allowMultipleDays && useMultipleDays && selectedDates.length > 0) {
+        let successCount = 0
+        let errorCount = 0
+        const errors: string[] = []
 
-      await onSubmit({
-        ...formData,
-        startTime: preSelectedSlot.startTime,
-        endTime,
-        duration: preSelectedSlot.duration
-      })
-      
-      setIsSuccess(true)
-      showToast({
-        type: 'success',
-        title: 'Solicitação Enviada!',
-        message: 'Sua solicitação foi enviada com sucesso. Você receberá uma confirmação por email.',
-        duration: 5000
-      })
+        for (const selectedDate of selectedDates) {
+          try {
+            const startTime = new Date(selectedDate)
+            startTime.setHours(preSelectedSlot.startTime.getHours())
+            startTime.setMinutes(preSelectedSlot.startTime.getMinutes())
+            startTime.setSeconds(0)
+            startTime.setMilliseconds(0)
+
+            const endTime = new Date(startTime.getTime() + preSelectedSlot.duration * 60000)
+
+            await onSubmit({
+              ...formData,
+              startTime,
+              endTime,
+              duration: preSelectedSlot.duration
+            })
+            successCount++
+          } catch (error) {
+            errorCount++
+            const dateStr = selectedDate.toLocaleDateString('pt-BR')
+            errors.push(`${dateStr}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+          }
+        }
+
+        if (successCount > 0) {
+          setIsSuccess(true)
+          showToast({
+            type: 'success',
+            title: 'Solicitações Enviadas!',
+            message: `${successCount} de ${selectedDates.length} solicitações enviadas com sucesso. Você receberá confirmação por email.`,
+            duration: 5000
+          })
+        }
+
+        if (errorCount > 0) {
+          showToast({
+            type: 'error',
+            title: 'Alguns agendamentos falharam',
+            message: errors.join('\n'),
+            duration: 10000
+          })
+        }
+      } else {
+        const endTime = new Date(preSelectedSlot.startTime.getTime() + preSelectedSlot.duration * 60000)
+
+        await onSubmit({
+          ...formData,
+          startTime: preSelectedSlot.startTime,
+          endTime,
+          duration: preSelectedSlot.duration,
+          multipleDates: preSelectedSlot.multipleDates // Passa as múltiplas datas se existirem
+        })
+        
+        const daysCount = preSelectedSlot.multipleDates?.length || 1
+        setIsSuccess(true)
+        showToast({
+          type: 'success',
+          title: 'Solicitação Enviada!',
+          message: daysCount > 1 
+            ? `${daysCount} agendamentos criados com sucesso! Você receberá confirmações por email.`
+            : 'Sua solicitação foi enviada com sucesso. Você receberá uma confirmação por email.',
+          duration: 5000
+        })
+      }
     } catch (error) {
       console.error('Erro ao enviar formulário:', error)
       const errorMessage = error instanceof Error ? error.message : 'Erro ao enviar solicitação. Tente novamente.'
@@ -164,7 +229,10 @@ export function SimpleAppointmentForm({
             </p>
             
             <div className="bg-white rounded-lg p-4 mb-6 text-left">
-              <h3 className="font-semibold mb-2">📋 Detalhes da Solicitação:</h3>
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Detalhes da Solicitação:
+              </h3>
               <div className="space-y-2 text-sm text-gray-600">
                 <p><strong>Assunto:</strong> {formData.title}</p>
                 <p><strong>Data e Hora:</strong> {formatDateTime(preSelectedSlot.startTime)}</p>
@@ -215,54 +283,173 @@ export function SimpleAppointmentForm({
   return (
     <div className="space-y-6">
       {/* Resumo do Horário Selecionado */}
-      <Card className="border-green-200 bg-green-50">
-        <CardHeader>
-          <CardTitle className="text-lg text-green-900 flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            ✅ Horário Selecionado
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+      {preSelectedSlot.multipleDates && preSelectedSlot.multipleDates.length > 0 ? (
+        // Modo Multi-Seleção: Mostrar todas as datas
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="text-lg text-blue-900 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Agendamento em Múltiplas Datas - {preSelectedSlot.multipleDates.length} {preSelectedSlot.multipleDates.length === 1 ? 'Dia' : 'Dias'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-1 flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  Horário (aplicado a todos os dias):
+                </h4>
+                <p className="text-blue-800 text-base font-medium">
+                  {formatTimeRange(
+                    preSelectedSlot.startTime, 
+                    new Date(preSelectedSlot.startTime.getTime() + preSelectedSlot.duration * 60000)
+                  )}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-blue-900 mb-1 flex items-center gap-1">
+                  <Timer className="h-4 w-4" />
+                  Duração:
+                </h4>
+                <p className="text-blue-800">{preSelectedSlot.duration} minutos</p>
+              </div>
+            </div>
+            
             <div>
-              <h4 className="font-semibold text-green-900 mb-1 flex items-center gap-1">
+              <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                📅 Data:
+                Datas Selecionadas:
               </h4>
-              <p className="text-green-800">
-                {preSelectedSlot.date.toLocaleDateString('pt-BR', {
-                  weekday: 'long',
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric'
-                })}
+              <div className="flex flex-wrap gap-2">
+                {preSelectedSlot.multipleDates.map((date, index) => (
+                  <div 
+                    key={index} 
+                    className="bg-white border border-blue-300 rounded-lg px-3 py-2 text-xs font-medium text-blue-900"
+                  >
+                    {date.toLocaleDateString('pt-BR', {
+                      weekday: 'short',
+                      day: '2-digit',
+                      month: '2-digit'
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
+              <p className="text-sm text-blue-900">
+                <strong>Atenção:</strong> Este formulário criará <strong>{preSelectedSlot.multipleDates.length} {preSelectedSlot.multipleDates.length === 1 ? 'agendamento' : 'agendamentos'}</strong> com o mesmo horário e informações nas datas selecionadas acima.
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        // Modo Single: Mostrar data única
+        <Card className="border-green-200 bg-green-50">
+          <CardHeader>
+            <CardTitle className="text-lg text-green-900 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Horário Selecionado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <h4 className="font-semibold text-green-900 mb-1 flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  Data:
+                </h4>
+                <p className="text-green-800">
+                  {preSelectedSlot.date.toLocaleDateString('pt-BR', {
+                    weekday: 'long',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-green-900 mb-1 flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  Horário:
+                </h4>
+                <p className="text-green-800">
+                  {formatTimeRange(
+                    preSelectedSlot.startTime, 
+                    new Date(preSelectedSlot.startTime.getTime() + preSelectedSlot.duration * 60000)
+                  )}
+                </p>
             </div>
             <div>
               <h4 className="font-semibold text-green-900 mb-1 flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                ⏰ Horário:
+                <Timer className="h-4 w-4" />
+                Duração:
               </h4>
-              <p className="text-green-800">
-                {formatTimeRange(
-                  preSelectedSlot.startTime, 
-                  new Date(preSelectedSlot.startTime.getTime() + preSelectedSlot.duration * 60000)
-                )}
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-green-900 mb-1">⏱️ Duração:</h4>
               <p className="text-green-800">
                 {preSelectedSlot.duration} minutos
                 {preSelectedSlot.duration >= 60 && ` (${Math.floor(preSelectedSlot.duration / 60)}h${preSelectedSlot.duration % 60 > 0 ? ` ${preSelectedSlot.duration % 60}min` : ''})`}
               </p>
             </div>
           </div>
-          <p className="text-xs text-green-700 mt-3">
-            💡 Este horário está reservado temporariamente enquanto você preenche o formulário.
+          <p className="text-xs text-green-700 mt-3 flex items-center gap-1">
+            <Lightbulb className="h-3 w-3" />
+            Este horário está reservado temporariamente enquanto você preenche o formulário.
           </p>
         </CardContent>
       </Card>
+      )}
+
+      {/* Toggle para múltiplos dias */}
+      {allowMultipleDays && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="multiple-days-toggle" className="text-sm font-medium">
+                Repetir para múltiplos dias
+              </Label>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="multiple-days-toggle"
+                  checked={useMultipleDays}
+                  onChange={(e) => setUseMultipleDays(e.target.checked)}
+                  disabled={disabled}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {useMultipleDays 
+                ? 'Selecione os dias abaixo. O mesmo horário será aplicado para todos.'
+                : 'Ative para agendar o mesmo horário em vários dias úteis'
+              }
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Seletor de múltiplos dias */}
+      {allowMultipleDays && useMultipleDays && (
+        <DateRangePicker
+          selectedDates={selectedDates}
+          onDatesSelect={setSelectedDates}
+          workingDays={workingDays}
+          disabled={disabled}
+          showLegend={true}
+        />
+      )}
+
+      {/* Aviso de múltiplos dias */}
+      {useMultipleDays && selectedDates.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-4">
+            <p className="text-sm text-blue-900 font-medium">
+              {selectedDates.length} dias selecionados - O mesmo horário será aplicado para todos
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Formulário */}
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -302,16 +489,46 @@ export function SimpleAppointmentForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MEETING">🤝 Reunião Presencial</SelectItem>
-                    <SelectItem value="CALL">📞 Ligação/Videochamada</SelectItem>
-                    <SelectItem value="PRESENTATION">📊 Apresentação</SelectItem>
+                    <SelectItem value="MEETING">
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4" />
+                        Reunião Presencial
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="CALL">
+                      <div className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        Ligação/Videochamada
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PRESENTATION">
+                      <div className="flex items-center gap-2">
+                        <Presentation className="h-4 w-4" />
+                        Apresentação
+                      </div>
+                    </SelectItem>
                     {(session?.user?.role === 'ADMIN' || session?.user?.role === 'SECRETARY') && (
                       <>
-                        <SelectItem value="PARTICULAR">🔒 Compromisso Particular</SelectItem>
-                        <SelectItem value="VIAGEM">✈️ Viagem</SelectItem>
+                        <SelectItem value="PARTICULAR">
+                          <div className="flex items-center gap-2">
+                            <Lock className="h-4 w-4" />
+                            Compromisso Particular
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="VIAGEM">
+                          <div className="flex items-center gap-2">
+                            <Plane className="h-4 w-4" />
+                            Viagem
+                          </div>
+                        </SelectItem>
                       </>
                     )}
-                    <SelectItem value="OTHER">📝 Outro</SelectItem>
+                    <SelectItem value="OTHER">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Outro
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { AppointmentCard } from '@/components/appointments/AppointmentCard'
 import { AppointmentConfirmation } from '@/components/admin/AppointmentConfirmation'
 import { AppointmentDetailsModal } from '@/components/admin/AppointmentDetailsModal'
-import { CalendarPicker } from '@/components/calendar/CalendarPicker'
+import { VisualCalendar } from '@/components/calendar/VisualCalendar'
 import { EmailTestPanel } from '@/components/admin/EmailTestPanel'
 import { useToast } from '@/components/ui/alert-toast'
 import { 
@@ -17,7 +17,14 @@ import {
   Clock, 
   Users, 
   CheckCircle, 
-  XCircle, 
+  XCircle,
+  Search,
+  UserCheck,
+  Video,
+  Presentation,
+  Lock,
+  Plane,
+  FileText, 
   AlertCircle
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
@@ -57,6 +64,8 @@ export default function AdminDashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [typeFilter, setTypeFilter] = useState<string>('')
+  const [appointmentsStatus, setAppointmentsStatus] = useState<any[]>([])
+  const [settings, setSettings] = useState<any>(null)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -66,6 +75,8 @@ export default function AdminDashboard() {
     }
     fetchAppointments()
     fetchStats()
+    fetchSettings()
+    fetchAppointmentsStatus()
   }, [session, status, selectedDate, typeFilter])
 
   const fetchAppointments = async () => {
@@ -114,6 +125,26 @@ export default function AdminDashboard() {
       })
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error)
+    }
+  }
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/settings')
+      const data = await response.json()
+      setSettings(data)
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error)
+    }
+  }
+
+  const fetchAppointmentsStatus = async () => {
+    try {
+      const response = await fetch('/api/appointments/day-status')
+      const data = await response.json()
+      setAppointmentsStatus(data.days || [])
+    } catch (error) {
+      console.error('Erro ao carregar status dos agendamentos:', error)
     }
   }
 
@@ -316,7 +347,10 @@ export default function AdminDashboard() {
         {(session?.user?.role === 'ADMIN' || session?.user?.role === 'SECRETARY') && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-lg">🔍 Filtros</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Filtros
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
@@ -331,43 +365,55 @@ export default function AdminDashboard() {
                   variant={typeFilter === 'MEETING' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTypeFilter('MEETING')}
+                  className="gap-2"
                 >
-                  🤝 Reuniões
+                  <UserCheck className="h-4 w-4" />
+                  Reuniões
                 </Button>
                 <Button
                   variant={typeFilter === 'CALL' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTypeFilter('CALL')}
+                  className="gap-2"
                 >
-                  📞 Ligações
+                  <Video className="h-4 w-4" />
+                  Ligações
                 </Button>
                 <Button
                   variant={typeFilter === 'PRESENTATION' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTypeFilter('PRESENTATION')}
+                  className="gap-2"
                 >
-                  📊 Apresentações
+                  <Presentation className="h-4 w-4" />
+                  Apresentações
                 </Button>
                 <Button
                   variant={typeFilter === 'PARTICULAR' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTypeFilter('PARTICULAR')}
+                  className="gap-2"
                 >
-                  🔒 Particulares
+                  <Lock className="h-4 w-4" />
+                  Particulares
                 </Button>
                 <Button
                   variant={typeFilter === 'VIAGEM' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTypeFilter('VIAGEM')}
+                  className="gap-2"
                 >
-                  ✈️ Viagens
+                  <Plane className="h-4 w-4" />
+                  Viagens
                 </Button>
                 <Button
                   variant={typeFilter === 'OTHER' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setTypeFilter('OTHER')}
+                  className="gap-2"
                 >
-                  📝 Outros
+                  <FileText className="h-4 w-4" />
+                  Outros
                 </Button>
               </div>
             </CardContent>
@@ -378,11 +424,14 @@ export default function AdminDashboard() {
           
           {/* Calendário e Testes */}
           <div className="lg:col-span-1 space-y-6">
-            <CalendarPicker
+            <VisualCalendar
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
+              appointmentsStatus={appointmentsStatus}
+              settings={settings}
               minDate={new Date(new Date().setDate(new Date().getDate() - 30))}
               workingDays={[1, 2, 3, 4, 5, 6, 0]}
+              showLegend={true}
             />
             
             {/* Painel de Testes de Email */}
@@ -416,6 +465,7 @@ export default function AdminDashboard() {
                     onUpdate={() => {
                       fetchAppointments()
                       fetchStats()
+                      fetchAppointmentsStatus()
                     }}
                   />
                 </CardContent>
@@ -450,6 +500,7 @@ export default function AdminDashboard() {
                     onUpdate={() => {
                       fetchAppointments()
                       fetchStats()
+                      fetchAppointmentsStatus()
                     }}
                   />
                 )}
@@ -481,6 +532,7 @@ export default function AdminDashboard() {
                     onUpdate={() => {
                       fetchAppointments()
                       fetchStats()
+                      fetchAppointmentsStatus()
                     }}
                   />
                 </CardContent>
@@ -511,6 +563,7 @@ export default function AdminDashboard() {
                     onUpdate={() => {
                       fetchAppointments()
                       fetchStats()
+                      fetchAppointmentsStatus()
                     }}
                   />
                 </CardContent>
