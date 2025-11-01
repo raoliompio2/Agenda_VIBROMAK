@@ -1,0 +1,19 @@
+{
+  "name": "Vibromak - Recepção",
+  "short_name": "Vibromak",
+  "description": "Sistema de agendamento online para reuniões executivas da Vibromak",
+  "icons": [
+    {
+      "src": "/Favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#f37021",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "orientation": "portrait-primary"
+}
+
