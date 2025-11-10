@@ -27,7 +27,7 @@ const appointmentSchema = z.object({
   description: z.string().optional(),
   startTime: z.string().datetime(),
   endTime: z.string().datetime(),
-  duration: z.number().min(15).max(480).optional().default(60),
+  duration: z.number().min(15).max(43200).optional(), // Opcional - será calculado automaticamente a partir de startTime e endTime (até 30 dias)
   type: z.enum(['MEETING', 'CALL', 'PRESENTATION', 'PARTICULAR', 'VIAGEM', 'OTHER']),
   location: z.string().optional(),
   clientName: z.string().min(1, 'Nome é obrigatório'),
@@ -48,11 +48,35 @@ export async function POST(request: NextRequest) {
     const startTime = new Date(validatedData.startTime)
     const endTime = new Date(validatedData.endTime)
     
+    // Calcular a duração real a partir do startTime e endTime
+    const calculatedDuration = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60))
+    
+    // Usar a duração calculada se for diferente da fornecida ou se não foi fornecida
+    const finalDuration = calculatedDuration > 0 ? calculatedDuration : (validatedData.duration || 60)
+    
+    // Validar que a duração calculada está dentro dos limites
+    if (finalDuration < 15) {
+      return NextResponse.json(
+        { error: 'A duração do agendamento deve ser de pelo menos 15 minutos' },
+        { status: 400 }
+      )
+    }
+    
+    if (finalDuration > 43200) {
+      return NextResponse.json(
+        { error: 'A duração do agendamento não pode exceder 30 dias (43200 minutos)' },
+        { status: 400 }
+      )
+    }
+    
     console.log('📅 Horário solicitado:', {
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
       startTimeLocal: startTime.toLocaleString('pt-BR'),
-      endTimeLocal: endTime.toLocaleString('pt-BR')
+      endTimeLocal: endTime.toLocaleString('pt-BR'),
+      durationFornecida: validatedData.duration,
+      durationCalculada: calculatedDuration,
+      durationFinal: finalDuration
     })
 
     // Buscar todos os agendamentos para debug
@@ -137,7 +161,7 @@ export async function POST(request: NextRequest) {
       // Gerar todas as instâncias da recorrência
       const instances = generateRecurrenceInstances(
         startTime,
-        validatedData.duration,
+        finalDuration,
         recurrenceConfig
       )
       
@@ -151,7 +175,7 @@ export async function POST(request: NextRequest) {
             description: validatedData.description,
             startTime: instance.startTime,
             endTime: instance.endTime,
-            duration: validatedData.duration,
+            duration: finalDuration,
             type: validatedData.type,
             location: validatedData.location,
             clientName: validatedData.clientName,
@@ -190,7 +214,7 @@ export async function POST(request: NextRequest) {
           description: validatedData.description,
           startTime,
           endTime,
-          duration: validatedData.duration,
+          duration: finalDuration,
           type: validatedData.type,
           location: validatedData.location,
           clientName: validatedData.clientName,
@@ -239,8 +263,17 @@ export async function POST(request: NextRequest) {
     console.error('Erro ao criar agendamento:', error)
     
     if (error instanceof z.ZodError) {
+      console.error('Erros de validação Zod:', error.errors)
+      const errorMessages = error.errors.map(err => 
+        `${err.path.join('.')}: ${err.message}`
+      ).join(', ')
+      
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { 
+          error: 'Dados inválidos', 
+          details: error.errors,
+          message: `Erros de validação: ${errorMessages}`
+        },
         { status: 400 }
       )
     }

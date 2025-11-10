@@ -198,12 +198,27 @@ export default function PublicAgendaPage() {
       // Se tem múltiplas datas, criar um agendamento para cada uma
       if (formData.multipleDates && formData.multipleDates.length > 0) {
         const promises = formData.multipleDates.map(async (date: Date) => {
-          // Ajustar o startTime e endTime para cada data
-          const startTime = new Date(date)
-          startTime.setHours(formData.startTime.getHours(), formData.startTime.getMinutes())
+          // Usar o construtor de Date com ano, mês, dia para evitar problemas de timezone
+          const year = date.getFullYear()
+          const month = date.getMonth()
+          const day = date.getDate()
           
-          const endTime = new Date(date)
-          endTime.setHours(formData.endTime.getHours(), formData.endTime.getMinutes())
+          const startTime = new Date(year, month, day,
+            formData.startTime.getHours(),
+            formData.startTime.getMinutes(),
+            0,
+            0)
+          
+          const endTime = new Date(year, month, day,
+            formData.endTime.getHours(),
+            formData.endTime.getMinutes(),
+            0,
+            0)
+          
+          // Validar que as datas são válidas
+          if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+            throw new Error(`Data ou horário inválido para ${date.toLocaleDateString('pt-BR')}`)
+          }
           
           const response = await fetch('/api/appointments', {
             method: 'POST',
@@ -212,22 +227,23 @@ export default function PublicAgendaPage() {
             },
             body: JSON.stringify({
               title: formData.title,
-              description: formData.description,
+              description: formData.description || '',
               startTime: startTime.toISOString(),
               endTime: endTime.toISOString(),
               type: formData.type,
               duration: formData.duration,
               clientName: formData.clientName,
               clientEmail: formData.clientEmail,
-              clientPhone: formData.clientPhone,
-              clientCompany: formData.clientCompany,
+              clientPhone: formData.clientPhone || '',
+              clientCompany: formData.clientCompany || '',
               participants: formData.participants || []
             })
           })
 
           if (!response.ok) {
             const error = await response.json()
-            throw new Error(`Erro em ${date.toLocaleDateString('pt-BR')}: ${error.error}`)
+            const errorMessage = error.message || error.error || 'Erro desconhecido'
+            throw new Error(`Erro em ${date.toLocaleDateString('pt-BR')}: ${errorMessage}`)
           }
 
           return await response.json()

@@ -159,19 +159,41 @@ export function AppointmentForm({
         for (const selectedDate of formData.selectedDates) {
           try {
             // Combinar a data selecionada com o horário
-            const startTime = new Date(selectedDate)
-            startTime.setHours(formData.selectedTime.getHours())
-            startTime.setMinutes(formData.selectedTime.getMinutes())
-            startTime.setSeconds(0)
-            startTime.setMilliseconds(0)
+            // Usar o construtor de Date com ano, mês, dia para evitar problemas de timezone
+            const year = selectedDate.getFullYear()
+            const month = selectedDate.getMonth()
+            const day = selectedDate.getDate()
+            
+            const startTime = new Date(year, month, day, 
+              formData.selectedTime.getHours(), 
+              formData.selectedTime.getMinutes(), 
+              0, 
+              0)
 
             const endTime = formData.selectedTimeEnd 
-              ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(),
-                  formData.selectedTimeEnd.getHours(), formData.selectedTimeEnd.getMinutes())
+              ? new Date(year, month, day,
+                  formData.selectedTimeEnd.getHours(), 
+                  formData.selectedTimeEnd.getMinutes(), 
+                  0, 
+                  0)
               : new Date(startTime.getTime() + formData.duration * 60000)
 
+            // Validar que as datas são válidas
+            if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+              throw new Error('Data ou horário inválido')
+            }
+
+            // Criar objeto de dados apenas com campos válidos para a API
             const submissionData: any = {
-              ...formData,
+              title: formData.title,
+              description: formData.description || '',
+              type: formData.type,
+              duration: formData.duration,
+              clientName: formData.clientName,
+              clientEmail: formData.clientEmail,
+              clientPhone: formData.clientPhone || '',
+              clientCompany: formData.clientCompany || '',
+              participants: formData.participants || [],
               startTime,
               endTime
             }
@@ -184,7 +206,9 @@ export function AppointmentForm({
           } catch (error) {
             errorCount++
             const dateStr = selectedDate.toLocaleDateString('pt-BR')
-            errors.push(`${dateStr}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+            console.error(`Erro ao criar agendamento para ${dateStr}:`, error)
+            errors.push(`${dateStr}: ${errorMessage}`)
           }
         }
 
@@ -232,8 +256,22 @@ export function AppointmentForm({
         const startTime = formData.selectedTime
         const endTime = formData.selectedTimeEnd || new Date(startTime.getTime() + formData.duration * 60000)
 
+        // Validar que as datas são válidas
+        if (!startTime || isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+          throw new Error('Data ou horário inválido')
+        }
+
+        // Criar objeto de dados apenas com campos válidos para a API
         const submissionData: any = {
-          ...formData,
+          title: formData.title,
+          description: formData.description || '',
+          type: formData.type,
+          duration: formData.duration,
+          clientName: formData.clientName,
+          clientEmail: formData.clientEmail,
+          clientPhone: formData.clientPhone || '',
+          clientCompany: formData.clientCompany || '',
+          participants: formData.participants || [],
           startTime,
           endTime
         }

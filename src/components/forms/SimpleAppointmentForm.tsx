@@ -119,25 +119,45 @@ export function SimpleAppointmentForm({
 
         for (const selectedDate of selectedDates) {
           try {
-            const startTime = new Date(selectedDate)
-            startTime.setHours(preSelectedSlot.startTime.getHours())
-            startTime.setMinutes(preSelectedSlot.startTime.getMinutes())
-            startTime.setSeconds(0)
-            startTime.setMilliseconds(0)
+            // Usar o construtor de Date com ano, mês, dia para evitar problemas de timezone
+            const year = selectedDate.getFullYear()
+            const month = selectedDate.getMonth()
+            const day = selectedDate.getDate()
+            
+            const startTime = new Date(year, month, day,
+              preSelectedSlot.startTime.getHours(),
+              preSelectedSlot.startTime.getMinutes(),
+              0,
+              0)
 
             const endTime = new Date(startTime.getTime() + preSelectedSlot.duration * 60000)
 
+            // Validar que as datas são válidas
+            if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+              throw new Error('Data ou horário inválido')
+            }
+
+            // Criar objeto de dados apenas com campos válidos para a API
             await onSubmit({
-              ...formData,
+              title: formData.title,
+              description: formData.description || '',
+              type: formData.type,
+              duration: preSelectedSlot.duration,
+              clientName: formData.clientName,
+              clientEmail: formData.clientEmail,
+              clientPhone: formData.clientPhone || '',
+              clientCompany: formData.clientCompany || '',
+              participants: formData.participants || [],
               startTime,
-              endTime,
-              duration: preSelectedSlot.duration
+              endTime
             })
             successCount++
           } catch (error) {
             errorCount++
             const dateStr = selectedDate.toLocaleDateString('pt-BR')
-            errors.push(`${dateStr}: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
+            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+            console.error(`Erro ao criar agendamento para ${dateStr}:`, error)
+            errors.push(`${dateStr}: ${errorMessage}`)
           }
         }
 
